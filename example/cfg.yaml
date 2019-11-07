@@ -1,0 +1,6 @@
+metadata:
+  sample_table: samples.csv
+  output_dir: $HOME
+
+constant_attributes:
+  protocol: "make_bed"

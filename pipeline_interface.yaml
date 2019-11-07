@@ -1,0 +1,11 @@
+protocol_mapping:
+  make_bed: bed_maker.py
+
+pipelines:
+  bed_maker.py:
+    name: bed_maker
+    path: bed_maker.py
+    arguments:
+      "--input-file": file_name
+      "--chip-exp": chip_exp
+      "--input-type": format

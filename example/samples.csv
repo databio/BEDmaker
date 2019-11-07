@@ -1,0 +1,4 @@
+sample_name,file_name,chip_exp,format
+ews1,file1.BW,True,bigwig
+ews2,file2.bedGraph,False,bedgraph
+ews38,file3.bed,True,bed
