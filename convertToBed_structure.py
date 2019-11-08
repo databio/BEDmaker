@@ -31,7 +31,7 @@ file_type = args.input_type
 outfolder = args.outfolder 
 
  # get the fileID argument for the .sh script 
- split_file_path = os.path.split(file) 
+ split_file_path = os.path.split(file_input)
 
  file_tail =  split_file_path[1]
  dot_find = file_tail.find(".")
