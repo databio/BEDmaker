@@ -25,7 +25,7 @@ if args.input_file is None:
 	sys.exit()
 
 # get the file, exp, and file_type arguments for the .sh script 
-file = args.input_file
+file_input = args.input_file
 exp = args.Chip_exp
 file_type = args.input_type
 outfolder = args.outfolder 
