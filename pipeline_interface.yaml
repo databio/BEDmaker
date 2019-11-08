@@ -5,7 +5,7 @@ pipelines:
   bed_maker.py:
     name: bed_maker
     path: bed_maker.py
-    looper_args: True 
+    looper_args:  True 
     arguments:
       "--input-file": file_path
       "--chip-exp": chip_exp
