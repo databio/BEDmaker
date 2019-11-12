@@ -1,2 +1,2 @@
-# convertToBED
-pipeline to convert bigWig or bedGraph files into BED format
+# BEDmaker
+Pypiper pipeline to convert bigWig, bedGraph and other types of files into BED format.
