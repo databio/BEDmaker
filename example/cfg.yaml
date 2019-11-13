@@ -1,6 +1,11 @@
 metadata:
-  sample_table: samples.csv
-  output_dir: $HOME
+  sample_table: samples_to_convert.csv
+  output_dir: . 
+  pipeline_interfaces: ../pipeline_interface.yaml 
+derived_attributes: [file_path]
+
+data_sources:
+  source1: "files/{file_name}"
 
 constant_attributes:
   protocol: "make_bed"
