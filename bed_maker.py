@@ -28,6 +28,8 @@ bedGraph_template = "macs2 {width} -i {input} -o {output}"
 bigBed_template = "bigBedToBed {input} {output}"
 # preliminary bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
+# preliminary for wig to bed
+wig_template = # "wig2bed < {input} = file.wig"
 
 
 def get_bed_path(current_path, outfolder):
