@@ -1,0 +1,5 @@
+sample_name,file_name,chip_exp,format,file_path,protocol
+Aml_1,GSE99378_A17_V7.bw,TRUE,bigWig ,source1,make_bed
+Aml_2,GSE99378_A3_V7.bedgraph,TRUE,bedGraph,source1,make_bed
+Aml_3,GSE105977_ENCFF390LXD_peaks_GRCh38.bigBed,TRUE,bigBed,source1,make_bed
+Aml_4,GSM3075371_22RV1_SC1_S9_L003_sorted_filtered.bedgraph,TRUE,bedGraph,source1,make_bed
