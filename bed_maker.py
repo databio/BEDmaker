@@ -2,29 +2,32 @@
 
 from argparse import ArgumentParser
 import pypiper
-import os  
+import os
+import sys
 
 parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph files into bed format")
 
 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
-parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=str)
+parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=bool)
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
 parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
 
-parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "common", "looper"],
- 											required=["--input-file", "--input-type", "--chip-exp"])
 
-args = parser.parse_args()  # all pipeline arguments should be defined by now
+# add pypiper args to make pipeline looper compatible
+parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
+                                            required=["--input-file", "--input-type", "--chip-exp", "--outfolder"])
 
-# commands templates
+args = parser.parse_args()
+
+# COMMANDS TEMPLATES
+
 # bedGraph to bed
-bedGraph_template = "macs2 bdgpeakcall -i {input} -o {output}"
-bigwig_template = "bigWigToBedgraph -i {input} | macs2 -o {output}"
-# bigWig to bed
-# big_wig_cmd = ""
-
-pm = pypiper.PipelineManager(name="bed_maker", outfolder=args.outfolder, args=args) #args defined with ArgParser and add_pypiper_args
+bedGraph_template = "macs2 {width} -i {input} -o {output}"
+# bigBed to bed
+bigBed_template = "bigBedToBed {input} {output}"
+# preliminary bigWig to bed
+bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 
 
 def get_bed_path(current_path, outfolder):
@@ -40,12 +43,34 @@ def get_bed_path(current_path, outfolder):
     return os.path.join(outfolder, file_id + ".bed")
 
 
-if args.input_type == "bedGraph":
-    print("Converting {} to BED format".format(args.input_file))
-    target = get_bed_path(args.input_file, args.outfolder)
-    cmd = bedGraph_template.format(input=args.input_file, output=target)
-else:
-    raise NotImplementedError("Other conversions are not supported yet")
+def main():
+    pm = pypiper.PipelineManager(name="bed_maker", outfolder=args.outfolder, args=args) #args defined with ArgParser and add_pypiper_args
 
-pm.run(cmd, target=target)
-pm.stop_pipeline()
+    # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
+    target = get_bed_path(args.input_file, args.outfolder)
+
+    print("Got input type: {}".format(args.input_type))
+    print("Converting {} to BED format".format(args.input_file))
+
+    width = "bdgbroadcall" if not args.chip_exp else "bdgpeakcall"
+
+    # if args.chip_exp:
+    if args.input_type == "bedGraph":
+        cmd = bedGraph_template.format(input=args.input_file, output=target, width=width)
+    elif args.input_type == "bigWig":
+        cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
+    elif args.input_type == "bigBed":
+        cmd = bigBed_template.format(input=args.input_file, output=target)
+    else:
+        raise NotImplementedError("Other conversions are not supported")
+
+    pm.run(cmd, target=target)
+    pm.stop_pipeline()
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("Pipeline aborted.")
+        sys.exit(1)
