@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import pypiper
 import os
 import sys
+import pyBigWig
 
 parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph files into bed format")
 
@@ -29,7 +30,7 @@ bigBed_template = "bigBedToBed {input} {output}"
 # preliminary bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
-wig_template = # "wig2bed < {input} = file.wig"
+#wig_template = # "wig2bed < {input} = file.wig"
 
 
 def get_bed_path(current_path, outfolder):
@@ -54,14 +55,20 @@ def main():
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
 
+    # Define whether our Chip-seq data has broad or narrow peaks
     width = "bdgbroadcall" if not args.chip_exp else "bdgpeakcall"
-
+    
+    
+    # Call pyBigWig to ensure bigWig and bigBed files have the correct format
+    big_check = pyBigWig.open(args.input_file)
+    
+    
     # if args.chip_exp:
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=args.input_file, output=target, width=width)
-    elif args.input_type == "bigWig":
+    elif args.input_type == "bigWig" and big_check.isBigWig() :
         cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
-    elif args.input_type == "bigBed":
+    elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
     else:
         raise NotImplementedError("Other conversions are not supported")
