@@ -12,12 +12,12 @@ parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
 parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=bool)
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
-parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
+#parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
 
 
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
-                                            required=["--input-file", "--input-type", "--chip-exp", "--outfolder"])
+                                            required=["--input-file", "--input-type", "--chip-exp"])
 
 args = parser.parse_args()
 
@@ -32,6 +32,7 @@ bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/
 # preliminary for wig to bed
 #wig_template = # "wig2bed < {input} = file.wig"
 
+outfolder = args.output_parent # use output parent argument from looper 
 
 def get_bed_path(current_path, outfolder):
     """
@@ -47,10 +48,10 @@ def get_bed_path(current_path, outfolder):
 
 
 def main():
-    pm = pypiper.PipelineManager(name="bed_maker", outfolder=args.outfolder, args=args) #args defined with ArgParser and add_pypiper_args
+    pm = pypiper.PipelineManager(name="bed_maker", outfolder=outfolder, args=args) # ArgParser and add_pypiper_args
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
-    target = get_bed_path(args.input_file, args.outfolder)
+    target = get_bed_path(args.input_file, outfolder)
 
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
@@ -60,7 +61,8 @@ def main():
     
     
     # Call pyBigWig to ensure bigWig and bigBed files have the correct format
-    big_check = pyBigWig.open(args.input_file)
+    if args.input_type == "bigWig" or args.input_type == "bigBed":
+        big_check = pyBigWig.open(args.input_file)
     
     
     # if args.chip_exp:
