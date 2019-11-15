@@ -27,31 +27,35 @@ args = parser.parse_args()
 bedGraph_template = "macs2 {width} -i {input} -o {output}"
 # bigBed to bed
 bigBed_template = "bigBedToBed {input} {output}"
-# preliminary bigWig to bed
+# bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
-#wig_template = # "wig2bed < {input} = file.wig"
+#wig_template = # "wig2bed < {input} > {output}"
 
-outfolder = args.output_parent # use output parent argument from looper 
+out_parent = args.output_parent # use output parent argument from looper 
 
-def get_bed_path(current_path, outfolder):
-    """
-    Swap the file extension and change the directory
+# def get_bed_path(current_path, outfolder):
+#     """
+#     Swap the file extension and change the directory
 
-    :param str current_path: current path to the file to be converted
-    :param str outfolder: output directory to place the file with the swapped extension in
-    :return str: path to the file with swapped extension
-    """
-    file_name = os.path.basename(current_path)
-    file_id = os.path.splitext(file_name)[0]
-    return os.path.join(outfolder, file_id + ".bed")
+#     :param str current_path: current path to the file to be converted
+#     :param str outfolder: output directory to place the file with the swapped extension in
+#     :return str: path to the file with swapped extension
+#     """
+#     file_name = os.path.basename(current_path)
+#     file_id = os.path.splitext(file_name)[0]
+#     return os.path.join(outfolder, file_id + ".bed")
 
+file_name = os.path.basename(args.input_file)
+file_id = os.path.splitext(file_name)[0]
+sample_folder = os.path.join(out_parent, file_id)
 
 def main():
-    pm = pypiper.PipelineManager(name="bed_maker", outfolder=outfolder, args=args) # ArgParser and add_pypiper_args
+    pm = pypiper.PipelineManager(name="bed_maker", outfolder=sample_folder, args=args) # ArgParser and add_pypiper_args
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
-    target = get_bed_path(args.input_file, outfolder)
+    #target = get_bed_path(args.input_file, outfolder2)
+    target = os.path.join(sample_folder, file_id + ".bed")
 
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
