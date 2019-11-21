@@ -10,4 +10,5 @@ pipelines:
       "--input-file": file_path
       "--chip-exp": chip_exp
       "--input-type": format
+      "--genome": genome
       
