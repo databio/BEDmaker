@@ -12,6 +12,7 @@ parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
 parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=bool)
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
+parser.add_argument("-g", "--genome", help="reference genome")
 #parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
 
 
@@ -30,7 +31,7 @@ bigBed_template = "bigBedToBed {input} {output}"
 # bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
-#wig_template = # "wig2bed < {input} > {output}"
+wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 
 out_parent = args.output_parent # use output parent argument from looper 
 
@@ -60,7 +61,7 @@ def main():
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
 
-    # Define whether our Chip-seq data has broad or narrow peaks
+    # Define whether Chip-seq data has broad or narrow peaks
     width = "bdgbroadcall" if not args.chip_exp else "bdgpeakcall"
     
     
@@ -74,6 +75,11 @@ def main():
         cmd = bedGraph_template.format(input=args.input_file, output=target, width=width)
     elif args.input_type == "bigWig" and big_check.isBigWig() :
         cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
+    elif args.input_type == "wig": 
+        if args.genome == "hg19":
+            cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes="ftp://hgdownload.soe.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/hg19.chrom.sizes", width=width)
+        elif args.genome == "hg38":
+             cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes=hg38.chrom.sizes, width=width)
     elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
     else:
