@@ -5,6 +5,7 @@ import pypiper
 import os
 import sys
 import pyBigWig
+import refgenconf
 
 parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph files into bed format")
 
@@ -22,7 +23,7 @@ parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
 
 args = parser.parse_args()
 
-# COMMANDS TEMPLATES
+# COMMANDS TEMPLATES ----------------------------------------------------------
 
 # bedGraph to bed
 bedGraph_template = "macs2 {width} -i {input} -o {output}"
@@ -32,6 +33,12 @@ bigBed_template = "bigBedToBed {input} {output}"
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
 wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
+
+
+# define refgenconf object to get chrom sizes file
+rgc = refgenconf.RefGenConf("genome_config.yaml")
+chrom_sizes = rgc.get_asset(args.genome, "fasta.chrom_sizes:default") 
+
 
 out_parent = args.output_parent # use output parent argument from looper 
 
@@ -76,10 +83,7 @@ def main():
     elif args.input_type == "bigWig" and big_check.isBigWig() :
         cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
     elif args.input_type == "wig": 
-        if args.genome == "hg19":
-            cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes="ftp://hgdownload.soe.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/hg19.chrom.sizes", width=width)
-        elif args.genome == "hg38":
-             cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes=hg38.chrom.sizes, width=width)
+        cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes=chrom_sizes, width=width)
     elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
     else:
