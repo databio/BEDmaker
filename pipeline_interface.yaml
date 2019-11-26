@@ -11,5 +11,6 @@ pipelines:
       "--chip-exp": chip_exp
       "--input-type": format
       "--genome": genome
+    optional_arguments:
       "--rfg-config": rfg_config 
       
