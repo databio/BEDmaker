@@ -38,7 +38,7 @@ wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout | bigWigToBedGrap
 
 
 # define refgenconf object to get chrom sizes file
-rgc = RGC(select_genome_config(args.rfg_config))
+rgc = RGC(select_genome_config(filename=args.rfg_config, check_exist=True, strict_env=True))
 chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes") 
 
 
