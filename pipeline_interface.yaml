@@ -11,5 +11,5 @@ pipelines:
       "--chip-exp": chip_exp
       "--input-type": format
       "--genome": genome
-      "--rfg-config": $REFGENIE
+      "--rfg-config": rfg_config 
       
