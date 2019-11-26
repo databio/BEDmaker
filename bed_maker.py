@@ -5,7 +5,8 @@ import pypiper
 import os
 import sys
 import pyBigWig
-import refgenconf
+from refgenconf import RefGenConf as RGC, select_genome_config
+import yacman
 
 parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph files into bed format")
 
@@ -14,6 +15,7 @@ parser.add_argument("-f", "--input-file", help="path to the input file", type=st
 parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=bool)
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
 parser.add_argument("-g", "--genome", help="reference genome")
+parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
 #parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
 
 
@@ -36,8 +38,8 @@ wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout | bigWigToBedGrap
 
 
 # define refgenconf object to get chrom sizes file
-rgc = refgenconf.RefGenConf("genome_config.yaml")
-chrom_sizes = rgc.get_asset(args.genome, "fasta.chrom_sizes:default") 
+rgc = RGC(select_genome_config(args.rfg_config))
+chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes") 
 
 
 out_parent = args.output_parent # use output parent argument from looper 
