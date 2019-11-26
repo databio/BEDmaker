@@ -9,4 +9,4 @@ data_sources:
 
 constant_attributes:
   protocol: "make_bed"
-  rfg_config: ${REFGENIE}
+  
