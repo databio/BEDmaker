@@ -36,13 +36,9 @@ bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/
 # preliminary for wig to bed
 wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 
-
-# define refgenconf object to get chrom sizes file
-rgc = RGC(select_genome_config(filename=args.rfg_config, check_exist=True, strict_env=True))
-chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes") 
-
-
-out_parent = args.output_parent # use output parent argument from looper 
+# SET OUTPUT FOLDERS
+# use output parent argument from looper 
+out_parent = args.output_parent 
 
 # def get_bed_path(current_path, outfolder):
 #     """
@@ -85,6 +81,9 @@ def main():
     elif args.input_type == "bigWig" and big_check.isBigWig() :
         cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
     elif args.input_type == "wig": 
+        # define refgenconf object to get chrom sizes file
+        rgc = RGC(select_genome_config(filename=args.rfg_config, check_exist=True, strict_env=True))
+        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes") 
         cmd = wig_template.format(input=args.input_file, output=target, chrom_sizes=chrom_sizes, width=width)
     elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
