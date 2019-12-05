@@ -1,6 +1,4 @@
 loopercli
-refgenconf
-refgenie
-piper
-pypiper
-pyBigWig
+refgenconf>=0.5.5
+piper==0.12.1
+pyBigWig==0.3.17
