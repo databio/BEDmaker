@@ -1,6 +1,6 @@
 manifest:
   name: bed_maker
-  version: 1.0.0
+  version: 1.0
   commands:
   - command: macs2
     dockerargs: "-i"
@@ -16,7 +16,8 @@ manifest:
     docker_command: bigWigToBedGraph 
   - command: bigBedToBed
     docker_image: quay.io/biocontainers/ucsc-bigbedtobed:377--h199ee4e_0
-    docker_command: bigBedToBed 
+    docker_command: bigBedToBed
+  
 
 
 
