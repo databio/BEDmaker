@@ -25,7 +25,7 @@ parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
 
 args = parser.parse_args()
 
-# COMMANDS TEMPLATES ----------------------------------------------------------
+# COMMANDS TEMPLATES 
 
 # bedGraph to bed
 bedGraph_template = "macs2 {width} -i {input} -o {output}"
@@ -35,7 +35,7 @@ bigBed_template = "bigBedToBed {input} {output}"
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
 #wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
-wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip " 
+wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip" 
 
 
 # SET OUTPUT FOLDERS
@@ -64,8 +64,7 @@ def main():
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
     #target = get_bed_path(args.input_file, outfolder2)
     target = os.path.join(sample_folder, file_id + ".bed")
-    temp_target = os.path.join(sample_folder, file_id + ".bw") 
-
+     
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
 
@@ -89,15 +88,20 @@ def main():
         chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes")    
         # define a target for temporary bw files
         temp_target = os.path.join(sample_folder, file_id + ".bw")
-        cmd = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
-        cmd = bigWig_template.format(input=temp_target, output=target, width=width)
+        cmd1 = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
+        cmd2 = bigWig_template.format(input=temp_target, output=target, width=width)
     elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
     else:
         raise NotImplementedError("Other conversions are not supported")
 
-    pm.run(cmd, target=target)
-    pm.stop_pipeline()
+    if args.input_type == "wig":
+        pm.run([cmd1, cmd2], target=target)
+        pm.clean_add(temp_target)
+        pm.stop_pipeline()
+    else: 
+        pm.run(cmd, target=target)
+        pm.stop_pipeline()
 
 
 if __name__ == '__main__':
