@@ -5,7 +5,7 @@ import pypiper
 import os
 import sys
 import pyBigWig
-from refgenconf import RefGenConf as RGC, select_genome_config
+from refgenconf import RefGenConf as RGC, select_genome_config, RefgenconfError, CFG_ENV_VARS, CFG_FOLDER_KEY
 import yacman
 
 parser = ArgumentParser(description = "A pipeline to convert bigwig or bedgraph files into bed format")
@@ -58,6 +58,7 @@ file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 sample_folder = os.path.join(out_parent, file_id) #specific output folder for each sample
 
+
 def main():
     pm = pypiper.PipelineManager(name="bed_maker", outfolder=sample_folder, args=args) # ArgParser and add_pypiper_args
 
@@ -70,22 +71,42 @@ def main():
 
     # Define whether Chip-seq data has broad or narrow peaks
     width = "bdgbroadcall" if not args.chip_exp else "bdgpeakcall"
-    
-    
+
     # Call pyBigWig to ensure bigWig and bigBed files have the correct format
     if args.input_type == "bigWig" or args.input_type == "bigBed":
         big_check = pyBigWig.open(args.input_file)
-    
-    
+
     # if args.chip_exp:
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=args.input_file, output=target, width=width)
-    elif args.input_type == "bigWig" and big_check.isBigWig() :
+    elif args.input_type == "bigWig" and big_check.isBigWig():
         cmd = bigWig_template.format(input=args.input_file, output=target, width=width)
     elif args.input_type == "wig": 
-        # define refgenconf object to get chrom sizes file
-        rgc = RGC(select_genome_config(filename=args.rfg_config, check_exist=True, strict_env=True))
-        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key="chrom_sizes")    
+        # get path to the genome config; from arg or env var if arg not provided
+        refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
+        if not refgenie_cfg_path:
+            raise OSError("Could not determine path to a refgenie genome configuration file. "
+                          "Use --rfg-config argument or set '{}' environment variable to provide it".
+                          format(CFG_ENV_VARS))
+        if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
+            # file path not found, initialize a new config file
+            print("File '{}' does not exist. Initializing refgenie genome configuration file.".format(refgenie_cfg_path))
+            rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
+            rgc.initialize_config_file(filepath=refgenie_cfg_path)
+        else:
+            print("Reading refgenie genome configuration file from file: {}".format(refgenie_cfg_path))
+            rgc = RGC(filepath=refgenie_cfg_path)
+        try:
+            # get path to the chrom.sizes asset
+            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                        seek_key="chrom_sizes")
+        except RefgenconfError:
+            # if chrom.sizes not found, pull it first
+            print("Could not determine path to chrom.sizes asset, pulling")
+            rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
+            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                        seek_key="chrom_sizes")
+        print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
         # define a target for temporary bw files
         temp_target = os.path.join(sample_folder, file_id + ".bw")
         cmd1 = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
