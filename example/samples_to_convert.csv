@@ -1,7 +1,7 @@
-sample_name,file_name,genome,chip_exp,format,file_path
-Aml_1,GSM1513834_MV411_IgG.wig,hg19,TRUE,wig,source1
-Aml_2,GSE99378_A17_V7.bw,hg19,TRUE,bigWig ,source1
-Aml_3,GSM1513832_MV411_H3K4me3.wig,hg19,FALSE,wig,source1
-Aml_4,GSE99378_A3_V7.bedgraph,hg19,TRUE,bedGraph,source1
-Aml_5,GSE105977_ENCFF390LXD_peaks_GRCh38.bigBed,hg19,TRUE,bigBed,source1
-Aml_6,GSM3075371_22RV1_SC1_S9_L003_sorted_filtered.bedgraph,hg19,TRUE,bedGraph,source1
+sample_name,file_name,genome,chip_exp,format,file_path,original_file_name
+Aml_1,target_file_name,hg19,TRUE,wig,source1,GSM1513834_MV411_IgG.wig
+Aml_2,target_file_name,hg19,TRUE,bigWig ,source1,GSE99378_A17_V7.bw
+Aml_3,target_file_name,hg19,FALSE,wig,source1,GSM1513832_MV411_H3K4me3.wig
+Aml_4,target_file_name,hg19,TRUE,bedGraph,source1,GSE99378_A3_V7.bedgraph
+Aml_5,target_file_name,hg19,TRUE,bigBed,source1,GSE105977_ENCFF390LXD_peaks_GRCh38.bigBed
+Aml_6,target_file_name,hg19,TRUE,bedGraph,source1,GSM3075371_22RV1_SC1_S9_L003_sorted_filtered.bedgraph
