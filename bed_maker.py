@@ -100,14 +100,13 @@ def main():
             # get path to the chrom.sizes asset
             chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
                                         seek_key="chrom_sizes")
-            print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
         except RefgenconfError:
             # if chrom.sizes not found, pull it first
             print("Could not determine path to chrom.sizes asset, pulling")
             rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
             chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
                                         seek_key="chrom_sizes")
-            print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
+        print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
         # define a target for temporary bw files
         temp_target = os.path.join(sample_folder, file_id + ".bw")
         cmd1 = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
