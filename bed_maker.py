@@ -64,7 +64,8 @@ def main():
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
     #target = get_bed_path(args.input_file, outfolder2)
-    target = os.path.join(sample_folder, file_id + ".bed")
+    #target = os.path.join(sample_folder, file_id + ".bed")
+    target = os.path.join(os.path.dirname(args.input_file), file_name + ".bed")
      
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
