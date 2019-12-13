@@ -3,10 +3,10 @@ metadata:
   output_dir: . 
   pipeline_interfaces: ../pipeline_interface.yaml 
 
-derived_attributes: [file_name, file_path]
+derived_attributes: [input_file_path, output_file_path]
 data_sources:
-  source1: test_files/{original_file_name}
-  target_file_name: "{original_file_name}.bed"
-
+  source1: test_files/{file_name}
+  source2: test_files/output_BEDfiles/{sample_name}.bed
+ 
 constant_attributes:
   protocol: "make_bed"
