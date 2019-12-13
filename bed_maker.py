@@ -16,7 +16,8 @@ parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or 
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
 parser.add_argument("-g", "--genome", help="reference genome")
 parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
-#parser.add_argument("-o", "--outfolder", default="output", help="folder to put the converted BED files in")
+parser.add_argument("-o", "--output-file", help="path to the output BED files", type=str)
+#parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
 
 
 # add pypiper args to make pipeline looper compatible
@@ -34,8 +35,10 @@ bigBed_template = "bigBedToBed {input} {output}"
 # bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 # preliminary for wig to bed
-#wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
+# wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip" 
+# bed default link
+bed_template = "ln -s {input} {output}"
 
 
 # SET OUTPUT FOLDERS
@@ -56,16 +59,16 @@ out_parent = args.output_parent
 
 file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
-sample_folder = os.path.join(out_parent, file_id) #specific output folder for each sample
+sample_folder = os.path.join(out_parent, file_id) #specific output folder for each sample log and stats
 
 
 def main():
     pm = pypiper.PipelineManager(name="bed_maker", outfolder=sample_folder, args=args) # ArgParser and add_pypiper_args
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
-    #target = get_bed_path(args.input_file, outfolder2)
-    #target = os.path.join(sample_folder, file_id + ".bed")
-    target = os.path.join(os.path.dirname(args.input_file), file_name + ".bed")
+    #target = os.path.join(os.path.dirname(args.input_file), file_name + ".bed")
+    target = args.output_file
+
      
     print("Got input type: {}".format(args.input_type))
     print("Converting {} to BED format".format(args.input_file))
@@ -114,6 +117,8 @@ def main():
         cmd2 = bigWig_template.format(input=temp_target, output=target, width=width)
     elif args.input_type == "bigBed" and big_check.isBigBed():
         cmd = bigBed_template.format(input=args.input_file, output=target)
+    elif args.input_type == "bed":
+        cmd = bed_template.format(input=args.input_file, output=target)
     else:
         raise NotImplementedError("Other conversions are not supported")
 
