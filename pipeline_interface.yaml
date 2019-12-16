@@ -14,4 +14,9 @@ pipelines:
       "--genome": genome
     optional_arguments:
       "--rfg-config": rfg_config 
-      
+    resources:
+      default: 
+        file_size: "0"
+        cores: "8"
+        mem: "16000"
+        time: "00-18:00:00"
