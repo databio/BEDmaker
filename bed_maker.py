@@ -67,12 +67,15 @@ def main():
 
     # Call pyBigWig to ensure bigWig and bigBed files have the correct format
     if args.input_type in ["bigWig", "bigBed"]:
-        big_check = pyBigWig.open(args.input_file)
+        obj = pyBigWig.open(args.input_file)
+        validation_method = getattr(obj, "isBigBed" if args.input_type == "bigBed" else "isBigWig")
+        if not validation_method():
+            raise Exception("{} file did not pass the {} format validation".
+                            format(args.input_file, args.input_type))
 
-    # if args.chip_exp:
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=args.input_file, output=args.output_file, width=width)
-    elif args.input_type == "bigWig" and big_check.isBigWig():
+    elif args.input_type == "bigWig":
         cmd = bigWig_template.format(input=args.input_file, output=args.output_file, width=width)
     elif args.input_type == "wig": 
         # get path to the genome config; from arg or env var if arg not provided
@@ -106,7 +109,7 @@ def main():
         cmd1 = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
         cmd2 = bigWig_template.format(input=temp_target, output=args.output_file, width=width)
         cmd = [cmd1, cmd2]
-    elif args.input_type == "bigBed" and big_check.isBigBed():
+    elif args.input_type == "bigBed":
         cmd = bigBed_template.format(input=args.input_file, output=args.output_file)
     elif args.input_type == "bed":
         cmd = bed_template.format(input=args.input_file, output=args.output_file)
