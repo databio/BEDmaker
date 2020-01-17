@@ -6,15 +6,14 @@ import os
 import sys
 import pyBigWig
 from refgenconf import RefGenConf as RGC, select_genome_config, RefgenconfError, CFG_ENV_VARS, CFG_FOLDER_KEY
-import yacman
 
 parser = ArgumentParser(description="A pipeline to convert bigwig or bedgraph files into bed format")
 
 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
-parser.add_argument("-c", "--chip-exp", help="is it a ChIP-Seq TF experiment or a Histone modification ChiP-Seq experiment", type=bool)
-parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format")
-parser.add_argument("-g", "--genome", help="reference genome")
+parser.add_argument("-n", "--narrowpeak", help="whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)", type=bool)
+parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format", type=str)
+parser.add_argument("-g", "--genome", help="reference genome", type=str)
 parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
 parser.add_argument("-o", "--output-file", help="path to the output BED files", type=str)
 #parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
@@ -64,7 +63,7 @@ def main():
     print("Converting {} to BED format".format(args.input_file))
 
     # Define whether Chip-seq data has broad or narrow peaks
-    width = "bdgbroadcall" if not args.chip_exp else "bdgpeakcall"
+    width = "bdgbroadcall" if not args.narrowpeak else "bdgpeakcall"
 
     # Call pyBigWig to ensure bigWig and bigBed files have the correct format
     if args.input_type in ["bigWig", "bigBed"]:
