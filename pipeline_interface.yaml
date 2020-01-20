@@ -9,7 +9,7 @@ pipelines:
     arguments:
       "--input-file": input_file_path
       "--output-file": output_file_path
-      "--chip-exp": chip_exp
+      "--narrowpeak": narrowpeak
       "--input-type": format
       "--genome": genome
     optional_arguments:
