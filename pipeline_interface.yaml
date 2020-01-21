@@ -1,10 +1,10 @@
 protocol_mapping:
-  make_bed: bed_maker.py
+  make_bed: bedmaker
 
 pipelines:
-  bed_maker.py:
-    name: bed_maker
-    path: bed_maker.py
+  bedmaker:
+    name: bedmaker
+    path: bedmaker.py
     looper_args: True 
     arguments:
       "--input-file": input_file_path
