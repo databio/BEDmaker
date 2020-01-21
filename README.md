@@ -14,15 +14,26 @@ The input PEP can be validated against the [JSON schema in this repository](pep_
 eido -p <path/to/pep> -s pep_schema.yaml
 ```
 
-## Current formats supported*:
+## To run the pipeline:
+
+### Activate [`bulker`](http://bulker.io/) environment
+
+```
+bulker-activate databio/bedmaker
+``` 
+
+### Submit the pipeline with [`looper`](https://looper.readthedocs.io/en/latest/)
+ 
+```
+looper run example/cfg.yaml
+```
+
+
+----
+## Currently supported formats*:
 
 - bedGraph
 - bigBed
 - bigWig
 - wig
 
-## To run the pipeline:
- 
-```
-looper run example/cfg.yaml
-```
