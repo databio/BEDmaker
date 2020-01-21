@@ -16,13 +16,14 @@ eido -p <path/to/pep> -s pep_schema.yaml
 
 ## To run the pipeline:
 
-### Activate [`bulker`](http://bulker.io/) environment
+1. Activate [`bulker`](http://bulker.io/) environment
 
 ```
-bulker-activate databio/bedmaker
+bulker load databio/bedmaker:default
+bulker-activate databio/bedmaker:default
 ``` 
 
-### Submit the pipeline with [`looper`](https://looper.readthedocs.io/en/latest/)
+2. Submit the pipeline with [`looper`](https://looper.readthedocs.io/en/latest/)
  
 ```
 looper run example/cfg.yaml
