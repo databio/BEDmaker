@@ -7,7 +7,7 @@ import sys
 import pyBigWig
 from refgenconf import RefGenConf as RGC, select_genome_config, RefgenconfError, CFG_ENV_VARS, CFG_FOLDER_KEY
 
-parser = ArgumentParser(description="A pipeline to convert bigwig or bedgraph files into bed format")
+parser = ArgumentParser(description="A pipeline to convert wig, bigwig, bedgraph or bigbed files into bed format")
 
 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
@@ -16,7 +16,6 @@ parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that
 parser.add_argument("-g", "--genome", help="reference genome", type=str)
 parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
 parser.add_argument("-o", "--output-file", help="path to the output BED files", type=str)
-#parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
 
 
 # add pypiper args to make pipeline looper compatible
@@ -33,7 +32,7 @@ bedGraph_template = "macs2 {width} -i {input} -o {output}"
 bigBed_template = "bigBedToBed {input} {output}"
 # bigWig to bed
 bigWig_template = "bigWigToBedGraph {input} /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
-# preliminary for wig to bed
+# wig to bed
 # wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip" 
 # bed default link
