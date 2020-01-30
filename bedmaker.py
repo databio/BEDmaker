@@ -87,14 +87,18 @@ def main():
 
     if args.input_type == "bedGraph":
         if input_extension == ".gz":
-            cmd = bedGraph_template.format(input=unzipped_file_path, output=args.output_file, width=width)
+            cmd1 = bedGraph_template.format(input=unzipped_file_path, output=args.output_file, width=width)
         else:
-            cmd = bedGraph_template.format(input=args.input_file, output=args.output_file, width=width)           
+            cmd1 = bedGraph_template.format(input=args.input_file, output=args.output_file, width=width)
+        cmd2 = gzip_convert.format(unzipped_file=args.output_file)
+        cmd = [cmd1, cmd2]           
     elif args.input_type == "bigWig":
         if input_extension == ".gz":
-            cmd = bigWig_template.format(input=unzipped_file_path, output=args.output_file, width=width)
+            cmd1 = bigWig_template.format(input=unzipped_file_path, output=args.output_file, width=width)
         else:
-            cmd = bigWig_template.format(input=args.input_file, output=args.output_file, width=width)
+            cmd1 = bigWig_template.format(input=args.input_file, output=args.output_file, width=width)
+        cmd2 = gzip_convert.format(unzipped_file=args.output_file)
+        cmd = [cmd1, cmd2]           
     elif args.input_type == "wig": 
         # get path to the genome config; from arg or env var if arg not provided
         refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
@@ -127,25 +131,25 @@ def main():
         if input_extension == ".gz":
             cmd1 = wig_template.format(input=unzipped_file_path, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
             cmd2 = bigWig_template.format(input=temp_target, output=args.output_file, width=width)
-            cmd = [cmd1, cmd2]
         else:
             cmd1 = wig_template.format(input=args.input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
             cmd2 = bigWig_template.format(input=temp_target, output=args.output_file, width=width)
-            cmd = [cmd1, cmd2]
+        cmd3 = gzip_convert.format(unzipped_file=args.output_file)
+        cmd = [cmd1, cmd2, cmd3]
     elif args.input_type == "bigBed":
         if input_extension == ".gz":
-            cmd = bigBed_template.format(input=unzipped_file_path, output=args.output_file)
+            cmd1 = bigBed_template.format(input=unzipped_file_path, output=args.output_file)
         else:
-            cmd = bigBed_template.format(input=args.input_file, output=args.output_file)
+            cmd1 = bigBed_template.format(input=args.input_file, output=args.output_file)
+        cmd2 = gzip_convert.format(unzipped_file=args.output_file)
+        cmd = [cmd1, cmd2]
     elif args.input_type == "bed":  
-            cmd = bed_template.format(input=args.input_file, output=args.output_file)
-    # gzip newly produced bed files 
-    cmd3 = gzip_convert.format(unzipped_file=args.output_file)        
+        cmd = bed_template.format(input=args.input_file, output=args.output_file)               
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
 
-    pm.run([cmd,cmd3],target=args.output_file)
+    pm.run(cmd,target=args.output_file)
     pm.stop_pipeline()
 
 
