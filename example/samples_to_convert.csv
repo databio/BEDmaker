@@ -1,4 +1,4 @@
-sample_name,file_name,genome,chip_exp,format,input_file_path,output_file_path
+sample_name,file_name,genome,narrowpeak,format,input_file_path,output_file_path
 Aml_1,GSM1513834_MV411_IgG.wig,hg19,TRUE,wig,source1,source2
 Aml_2,GSE99378_A3_V7.bed,hg19,TRUE,bed,source1,source2
 Aml_3,GSE99378_A17_V7.bw,hg19,TRUE,bigWig ,source1,source2
