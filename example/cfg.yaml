@@ -6,7 +6,7 @@ metadata:
 derived_attributes: [input_file_path, output_file_path]
 data_sources:
   source1: test_files/{file_name}
-  source2: test_files/output_BEDfiles/{sample_name}.bed
+  source2: test_files/output_BEDfiles/{sample_name}.bed.gz
  
 constant_attributes:
   protocol: "make_bed"
