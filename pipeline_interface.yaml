@@ -12,6 +12,7 @@ pipelines:
       "--narrowpeak": narrowpeak
       "--input-type": format
       "--genome": genome
+      "--sample-name": sample_name
     optional_arguments:
       "--rfg-config": rfg_config 
     resources:
