@@ -1,23 +1,20 @@
-protocol_mapping:
-  make_bed: bedmaker
+pipeline_name: BEDMAKER
+pipeline_type: sample
+path: bedmaker.py
+input_schema: http://schema.databio.org/pipelines/bedmaker.yaml
+command_template: >
+  {pipeline.path}
+  --input-file {sample.input_file_path}
+  --output-file {sample.output_file_path}
+  --narrowpeak {sample.narrowpeak}
+  --input-type {sample.format}
+  --genome {sample.genome}
+  --sample-name: sample_name
+  {% if sample.rfg_config is defined %} --rfg-config {sample.rfg_config} {% endif %}
+compute:
+  size_dependent_variables: resources-sample.tsv
 
-pipelines:
-  bedmaker:
-    name: bedmaker
-    path: bedmaker.py
-    looper_args: True 
-    arguments:
-      "--input-file": input_file_path
-      "--output-file": output_file_path
-      "--narrowpeak": narrowpeak
-      "--input-type": format
-      "--genome": genome
-      "--sample-name": sample_name
-    optional_arguments:
-      "--rfg-config": rfg_config 
-    resources:
-      default: 
-        file_size: "0"
-        cores: "8"
-        mem: "16000"
-        time: "00-18:00:00"
+
+
+
+
