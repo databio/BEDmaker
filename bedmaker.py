@@ -23,7 +23,7 @@ parser.add_argument("-s", "--sample-name", help="name of the sample used to syst
 
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
-                                  required=["--input-file", "--input-type", "--chip-exp"])
+                                  required=["--input-file", "--input-type"])
 
 args = parser.parse_args()
 
@@ -41,25 +41,29 @@ wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip"
 # bed default link
 bed_template = "ln -s {input} {output}"
 # gzip output files
-gzip_template = "gzip -c {unzipped_file} > {zipped_file}"
+gzip_template = "gzip {unzipped_converted_file} "
 
 # SET OUTPUT FOLDERS
-# use output parent argument from looper 
-out_parent = args.output_parent
 
 file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
-sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
+#sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
 
 bed_parent = os.path.dirname(args.output_file)
 if not os.path.exists(bed_parent):
     print("Output directory does not exist. Creating: {}".format(bed_parent))
     os.makedirs(bed_parent)
 
+logs_name = "bedmaker_logs"
+logs_dir = os.path.join(bed_parent, logs_name, args.sample_name)
+if not os.path.exists(logs_dir):
+    print("bedmaker logs directory doesn't exist. Creating one...")
+    os.makedirs(logs_dir)
+
 
 def main():
-    pm = pypiper.PipelineManager(name="bedmaker", outfolder=sample_folder, args=args) # ArgParser and add_pypiper_args
+    pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
 
@@ -87,10 +91,12 @@ def main():
                 shutil.copyfileobj(f_in, f_out)
         pm.clean_add(input_file)
 
+    temp_bed_path = os.path.splitext(args.output_file)[0]
+
     if args.input_type == "bedGraph":
-        cmd = bedGraph_template.format(input=input_file, output=args.output_file, width=width)
+        cmd = bedGraph_template.format(input=input_file, output=temp_bed_path, width=width)
     elif args.input_type == "bigWig":
-        cmd = bigWig_template.format(input=input_file, output=args.output_file, width=width)
+        cmd = bigWig_template.format(input=input_file, output=temp_bed_path, width=width)
     elif args.input_type == "wig": 
         # get path to the genome config; from arg or env var if arg not provided
         refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
@@ -121,16 +127,16 @@ def main():
         temp_target = os.path.join(sample_folder, file_id + ".bw")
         pm.clean_add(temp_target)
         cmd1 = wig_template.format(input=input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
-        cmd2 = bigWig_template.format(input=temp_target, output=args.output_file, width=width)
+        cmd2 = bigWig_template.format(input=temp_target, output=temp_bed_path, width=width)
         cmd = [cmd1, cmd2]
     elif args.input_type == "bigBed":
-        cmd = bigBed_template.format(input=input_file, output=args.output_file)
+        cmd = bigBed_template.format(input=input_file, output=temp_bed_path)
     elif args.input_type == "bed":
-        cmd = bed_template.format(input=args.input_file, output=args.output_file)
+        cmd = bed_template.format(input=args.input_file, output=temp_bed_path)
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
-    gzip_cmd = gzip_template.format(unzipped_file=input_file, zipped_file=args.output_file)
+    gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
     if args.input_type != "bed" or input_extension != ".gz":
         if not isinstance(cmd, list):
             cmd = [cmd]
