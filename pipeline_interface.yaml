@@ -9,7 +9,7 @@ command_template: >
   --narrowpeak {sample.narrowpeak}
   --input-type {sample.format}
   --genome {sample.genome}
-  --sample-name: {sample.sample_name}
+  --sample-name {sample.sample_name}
   {% if sample.rfg_config is defined %} --rfg-config {sample.rfg_config} {% endif %}
 compute:
   size_dependent_variables: resources-sample.tsv

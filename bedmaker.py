@@ -124,7 +124,7 @@ def main():
                                         seek_key="chrom_sizes")
         print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
         # define a target for temporary bw files
-        temp_target = os.path.join(sample_folder, file_id + ".bw")
+        temp_target = os.path.join(bed_parent, file_id + ".bw")
         pm.clean_add(temp_target)
         cmd1 = wig_template.format(input=input_file, intermediate_bw=temp_target, chrom_sizes=chrom_sizes, width=width)
         cmd2 = bigWig_template.format(input=temp_target, output=temp_bed_path, width=width)
@@ -132,7 +132,7 @@ def main():
     elif args.input_type == "bigBed":
         cmd = bigBed_template.format(input=input_file, output=temp_bed_path)
     elif args.input_type == "bed":
-        cmd = bed_template.format(input=args.input_file, output=temp_bed_path)
+        cmd = bed_template.format(input=args.input_file, output=args.output_file)
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
