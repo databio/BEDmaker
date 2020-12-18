@@ -15,15 +15,16 @@ properties:
         output_file_path: 
           type: string
           description: "absolute path the file to the output BED file (derived attribute)"
+        output_bigbed_path: 
+          type: string
+          description: "absolute path the file to the output bigBED file (derived attribute)"
         genome:
           type: string
           description: "organism genome code"
           enum: ["hg18", "hg19", "hg38", "mm9", "mm10"]
         narrowpeak:
-          type: integer
-          minimum: 0
-          maximum: 1
-          description: "binary number indicating whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)"
+          type: boolean
+          description: "whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)"
         format:
           type: string
           description: "file format"
@@ -49,6 +50,7 @@ properties:
       required:
         - input_file_path
         - output_file_path
+        - output_bigbed_path
         - genome
         - narrowpeak
         - sample_name
