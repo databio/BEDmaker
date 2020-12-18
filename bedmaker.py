@@ -146,40 +146,42 @@ def main():
         cmd.append(gzip_cmd)
     pm.run(cmd, target=args.output_file)
 
+    print("Generateing bigBED files for {}".format(args.input_file))
     bedfile_name = os.path.split(args.output_file)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
-     # Produce bigBed (bigNarrowPeak) file from peak file 
+    # Produce bigBed (bigNarrowPeak) file from peak file 
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
-    temp = tempfile.NamedTemporaryFile(dir=args.output_bigbed, delete=False)
-    print ("test bigbed saving path: ", bigNarrowPeak)
-    print ("test chrom.sizes path: ", args.chrom_size)
-    if not os.path.exists(bigNarrowPeak):
-        df = pd.read_csv(args.output_file, sep='\t', header=None,
-                            names=("V1","V2","V3","V4","V5","V6",
-                                    "V7","V8","V9","V10")).sort_values(by=["V1","V2"])
-        df.to_csv(temp.name, sep='\t', header=False, index=False)
-        pm.clean_add(temp.name)
-        print ("BED: \n", df)
-        as_file = os.path.join(args.output_bigbed, "bigNarrowPeak.as")
-        cmd = ("echo 'table bigNarrowPeak\n" + 
-                "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
-                "(\n" +
-                "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
-                "     uint   chromStart;   \"Start position in chromosome\"\n" +
-                "     uint   chromEnd;     \"End position in chromosome\"\n" +
-                "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
-                "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
-                "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
-                "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
-                "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
-                "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
-                "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
-                ")' > " + as_file)
-        pm.run(cmd, as_file, clean=True)
+    if args.input_type != "bigBed":
+        temp = tempfile.NamedTemporaryFile(dir=args.output_bigbed, delete=False)
+        if not os.path.exists(bigNarrowPeak):
+            df = pd.read_csv(args.output_file, sep='\t', header=None,
+                                names=("V1","V2","V3","V4","V5","V6",
+                                        "V7","V8","V9","V10")).sort_values(by=["V1","V2"])
+            df.to_csv(temp.name, sep='\t', header=False, index=False)
+            pm.clean_add(temp.name)
+            as_file = os.path.join(args.output_bigbed, "bigNarrowPeak.as")
+            cmd = ("echo 'table bigNarrowPeak\n" + 
+                    "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
+                    "(\n" +
+                    "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
+                    "     uint   chromStart;   \"Start position in chromosome\"\n" +
+                    "     uint   chromEnd;     \"End position in chromosome\"\n" +
+                    "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
+                    "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
+                    "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
+                    "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
+                    "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
+                    "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
+                    "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
+                    ")' > " + as_file)
+            pm.run(cmd, as_file, clean=True)
 
-        cmd = ("bedToBigBed -as=" + as_file + " -type=bed6+4 " +
-                temp.name + " " + args.chrom_size + " " + bigNarrowPeak)
-        pm.run(cmd, bigNarrowPeak, nofail=True)
+            cmd = ("bedToBigBed -as=" + as_file + " -type=bed6+4 " +
+                    temp.name + " " + args.chrom_size + " " + bigNarrowPeak)
+            pm.run(cmd, bigNarrowPeak, nofail=True)
+    else:
+        cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
+        pm.run(cmd)
         
     pm.stop_pipeline()
 
