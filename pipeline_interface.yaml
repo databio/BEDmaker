@@ -2,7 +2,7 @@ pipeline_name: BEDMAKER
 pipeline_type: sample
 var_templates:
   path: "{looper.piface_dir}/bedmaker.py"
-input_schema: "/home/bx2ur/Documents/GitHubRepo/bedmaker/pep_schema.yaml"
+input_schema: http://schema.databio.org/pipelines/bedmaker.yaml
 command_template: >
   {pipeline.var_templates.path}
   --input-file {sample.input_file_path}
