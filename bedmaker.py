@@ -88,7 +88,7 @@ def main():
     input_file = args.input_file
     # Use the gzip and shutil modules to produce temporary unzipped files
     if input_extension == ".gz":
-        input_file = os.path.splitext(input_file)[0]
+        input_file = os.path.join(os.path.dirname(args.output_file),os.path.splitext(file_name)[0])
         with gzip.open(args.input_file, "rb") as f_in:
             with open(input_file, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
