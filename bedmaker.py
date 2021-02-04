@@ -58,6 +58,10 @@ if not os.path.exists(bed_parent):
     print("Output directory does not exist. Creating: {}".format(bed_parent))
     os.makedirs(bed_parent)
 
+if not os.path.exists(args.output_bigbed):
+    print("BigBed directory does not exist. Creating: {}".format(args.output_bigbed))
+    os.makedirs(args.output_bigbed)
+
 logs_name = "bedmaker_logs"
 logs_dir = os.path.join(bed_parent, logs_name, args.sample_name)
 if not os.path.exists(logs_dir):
