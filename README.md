@@ -1,6 +1,6 @@
 # bedmaker
 
-Pypiper pipeline to convert supported file types* into BED format. Generate bigBed file that would be used for the BED set trackHubs and visualization in Genome Browser.
+Pypiper pipeline to convert supported file types* into BED format and bigBed format
 
 ## Before running the pipeline: 
 
