@@ -21,8 +21,8 @@ parser.add_argument("-g", "--genome", help="reference genome", type=str)
 parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
 parser.add_argument("-o", "--output-file", help="path to the output BED files", type=str)
 parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
-parser.add_argument("--output-bigbed", help="path to the output bigBED files", type=str)
-parser.add_argument("--chrom-size", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
+parser.add_argument("--output-bigbed", help="path to the output bigBed files", type=str)
+parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
 
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
@@ -150,7 +150,7 @@ def main():
         cmd.append(gzip_cmd)
     pm.run(cmd, target=args.output_file)
 
-    print("Generateing bigBED files for {}".format(args.input_file))
+    print("Generating bigBed files for {}".format(args.input_file))
     bedfile_name = os.path.split(args.output_file)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file 
@@ -181,7 +181,7 @@ def main():
             pm.run(cmd, as_file, clean=True)
 
             cmd = ("bedToBigBed -as=" + as_file + " -type=bed6+4 " +
-                    temp.name + " " + args.chrom_size + " " + bigNarrowPeak)
+                    temp.name + " " + chrom_size + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
     else:
         cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
