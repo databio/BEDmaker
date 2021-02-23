@@ -181,7 +181,7 @@ def main():
             pm.run(cmd, as_file, clean=True)
 
             cmd = ("bedToBigBed -as=" + as_file + " -type=bed6+4 " +
-                    temp.name + " " + chrom_size + " " + bigNarrowPeak)
+                    temp.name + " " + chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
     else:
         cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)

@@ -13,7 +13,7 @@ command_template: >
   --genome {sample.genome}
   --sample-name {sample.sample_name}
   {% if sample.rfg_config is defined %} --rfg-config {sample.rfg_config} {% endif %}
-  {% if sample.chrom_size is defined %} --chrom-size {sample.chrom_size} {% endif %}
+  {% if sample.chrom_sizes is defined %} --chrom-sizes {sample.chrom_sizes} {% endif %}
 compute:
   size_dependent_variables: resources-sample.tsv
 
