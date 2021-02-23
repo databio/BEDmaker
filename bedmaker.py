@@ -19,9 +19,9 @@ parser.add_argument("-n", "--narrowpeak", help="whether the regions are narrow (
 parser.add_argument("-t", "--input-type", help="a bigwig or a bedgraph file that will be converted into BED format", type=str)
 parser.add_argument("-g", "--genome", help="reference genome", type=str)
 parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
-parser.add_argument("-o", "--output-file", help="path to the output BED files", type=str)
-parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
+parser.add_argument("-o", "--output-bed", help="path to the output BED files", type=str)
 parser.add_argument("--output-bigbed", help="path to the output bigBed files", type=str)
+parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
 parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
 
 # add pypiper args to make pipeline looper compatible
@@ -53,7 +53,7 @@ file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
 #sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
 
-bed_parent = os.path.dirname(args.output_file)
+bed_parent = os.path.dirname(args.output_bed)
 if not os.path.exists(bed_parent):
     print("Output directory does not exist. Creating: {}".format(bed_parent))
     os.makedirs(bed_parent)
@@ -92,13 +92,13 @@ def main():
     input_file = args.input_file
     # Use the gzip and shutil modules to produce temporary unzipped files
     if input_extension == ".gz":
-        input_file = os.path.join(os.path.dirname(args.output_file),os.path.splitext(file_name)[0])
+        input_file = os.path.join(os.path.dirname(args.output_bed),os.path.splitext(file_name)[0])
         with gzip.open(args.input_file, "rb") as f_in:
             with open(input_file, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         pm.clean_add(input_file)
 
-    temp_bed_path = os.path.splitext(args.output_file)[0]
+    temp_bed_path = os.path.splitext(args.output_bed)[0]
 
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=input_file, output=temp_bed_path, width=width)
@@ -139,7 +139,7 @@ def main():
     elif args.input_type == "bigBed":
         cmd = bigBed_template.format(input=input_file, output=temp_bed_path)
     elif args.input_type == "bed":
-        cmd = bed_template.format(input=args.input_file, output=args.output_file)
+        cmd = bed_template.format(input=args.input_file, output=args.output_bed)
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
@@ -148,17 +148,17 @@ def main():
         if not isinstance(cmd, list):
             cmd = [cmd]
         cmd.append(gzip_cmd)
-    pm.run(cmd, target=args.output_file)
+    pm.run(cmd, target=args.output_bed)
 
     print("Generating bigBed files for {}".format(args.input_file))
-    bedfile_name = os.path.split(args.output_file)[1]
+    bedfile_name = os.path.split(args.output_bed)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file 
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
     if args.input_type != "bigBed":
         temp = tempfile.NamedTemporaryFile(dir=args.output_bigbed, delete=False)
         if not os.path.exists(bigNarrowPeak):
-            df = pd.read_csv(args.output_file, sep='\t', header=None,
+            df = pd.read_csv(args.output_bed, sep='\t', header=None,
                                 names=("V1","V2","V3","V4","V5","V6",
                                         "V7","V8","V9","V10")).sort_values(by=["V1","V2"])
             df.to_csv(temp.name, sep='\t', header=False, index=False)

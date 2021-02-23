@@ -6,7 +6,7 @@ input_schema: http://schema.databio.org/pipelines/bedmaker.yaml
 command_template: >
   {pipeline.var_templates.path}
   --input-file {sample.input_file_path}
-  --output-file {sample.output_file_path}
+  --output-bed {sample.output_bed_path}
   --output-bigbed {sample.output_bigbed_path}
   --narrowpeak {sample.narrowpeak}
   --input-type {sample.format}

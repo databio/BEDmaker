@@ -12,7 +12,7 @@ properties:
         input_file_path: 
           type: string
           description: "absolute path the file to convert"
-        output_file_path: 
+        output_bed_path: 
           type: string
           description: "absolute path the file to the output BED file (derived attribute)"
         output_bigbed_path: 
@@ -49,7 +49,7 @@ properties:
           description: "freeform description of the sample treatment"
       required:
         - input_file_path
-        - output_file_path
+        - output_bed_path
         - output_bigbed_path
         - genome
         - narrowpeak
