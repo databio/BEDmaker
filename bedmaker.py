@@ -5,7 +5,6 @@ import pypiper
 import os
 import sys
 import tempfile
-import pandas as pd
 # import pyBigWig
 import gzip
 import shutil
@@ -68,6 +67,49 @@ if not os.path.exists(logs_dir):
     print("bedmaker logs directory doesn't exist. Creating one...")
     os.makedirs(logs_dir)
 
+def get_chrom_sizes():
+    """
+    Get chrom.sizes file path by input arg, or Refegenie.
+
+    :return str: chrom.sizes file path
+    """
+    
+    if args.chrom_sizes:
+        chrom_sizes = args.chrom_sizes
+    elif args.rfg_config:
+        print("Chrom.sizes file is not specified.  Determining path to chrom.sizes asset via Refgenie.")
+        # get path to the genome config; from arg or env var if arg not provided
+        refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
+        if not refgenie_cfg_path:
+            raise OSError("Could not determine path to a refgenie genome configuration file. "
+                          "Use --rfg-config argument or set '{}' environment variable to provide it".
+                          format(CFG_ENV_VARS))
+        if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
+            # file path not found, initialize a new config file
+            print("File '{}' does not exist. Initializing refgenie genome configuration file.".format(refgenie_cfg_path))
+            rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
+            rgc.initialize_config_file(filepath=refgenie_cfg_path)
+        else:
+            print("Reading refgenie genome configuration file from file: {}".format(refgenie_cfg_path))
+            rgc = RGC(filepath=refgenie_cfg_path)
+        try:
+            # get path to the chrom.sizes asset
+            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                        seek_key="chrom_sizes")
+        except RefgenconfError:
+            # if chrom.sizes not found, pull it first
+            print("Could not determine path to chrom.sizes asset, pulling")
+            rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
+            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                        seek_key="chrom_sizes")
+        print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
+    else: 
+        raise OSError("Could not determine path to chrom.sizes file. "
+                    "Use --chrom-sizes argument to provide it, or "
+                    "--rfg-config argument to  provide the path to genome config file and determine chrom.sizes asset via Refgenie.")
+    
+    return chrom_sizes
+
 
 def main():
     pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
@@ -105,31 +147,7 @@ def main():
     elif args.input_type == "bigWig":
         cmd = bigWig_template.format(input=input_file, output=temp_bed_path, width=width)
     elif args.input_type == "wig": 
-        # get path to the genome config; from arg or env var if arg not provided
-        refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
-        if not refgenie_cfg_path:
-            raise OSError("Could not determine path to a refgenie genome configuration file. "
-                          "Use --rfg-config argument or set '{}' environment variable to provide it".
-                          format(CFG_ENV_VARS))
-        if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
-            # file path not found, initialize a new config file
-            print("File '{}' does not exist. Initializing refgenie genome configuration file.".format(refgenie_cfg_path))
-            rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
-            rgc.initialize_config_file(filepath=refgenie_cfg_path)
-        else:
-            print("Reading refgenie genome configuration file from file: {}".format(refgenie_cfg_path))
-            rgc = RGC(filepath=refgenie_cfg_path)
-        try:
-            # get path to the chrom.sizes asset
-            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                        seek_key="chrom_sizes")
-        except RefgenconfError:
-            # if chrom.sizes not found, pull it first
-            print("Could not determine path to chrom.sizes asset, pulling")
-            rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
-            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                        seek_key="chrom_sizes")
-        print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
+        chrom_sizes = get_chrom_sizes()
         # define a target for temporary bw files
         temp_target = os.path.join(bed_parent, file_id + ".bw")
         pm.clean_add(temp_target)
@@ -157,30 +175,14 @@ def main():
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
     if args.input_type != "bigBed":
         temp = tempfile.NamedTemporaryFile(dir=args.output_bigbed, delete=False)
-        if not os.path.exists(bigNarrowPeak):
-            df = pd.read_csv(args.output_bed, sep='\t', header=None,
-                                names=("V1","V2","V3","V4","V5","V6",
-                                        "V7","V8","V9","V10")).sort_values(by=["V1","V2"])
-            df.to_csv(temp.name, sep='\t', header=False, index=False)
+        if not os.path.exists(bigNarrowPeak):            
             pm.clean_add(temp.name)
-            as_file = os.path.join(args.output_bigbed, "bigNarrowPeak.as")
-            cmd = ("echo 'table bigNarrowPeak\n" + 
-                    "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
-                    "(\n" +
-                    "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
-                    "     uint   chromStart;   \"Start position in chromosome\"\n" +
-                    "     uint   chromEnd;     \"End position in chromosome\"\n" +
-                    "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
-                    "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
-                    "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
-                    "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
-                    "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
-                    "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
-                    "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
-                    ")' > " + as_file)
-            pm.run(cmd, as_file, clean=True)
+            cmd = ("zcat " + args.output_bed + "  | sort -k1,1 -k2,2n | awk '{print $1,$2,$3}' > " + temp.name)
+            pm.run(cmd, temp.name, clean=True)
 
-            cmd = ("bedToBigBed -as=" + as_file + " -type=bed6+4 " +
+            chrom_sizes = get_chrom_sizes()
+
+            cmd = ("bedToBigBed -type=bed3 " +
                     temp.name + " " + chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
     else:
