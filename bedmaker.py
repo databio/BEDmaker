@@ -174,16 +174,15 @@ def main():
     # Produce bigBed (bigNarrowPeak) file from peak file 
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
     if args.input_type != "bigBed":
-        temp = tempfile.NamedTemporaryFile(dir=args.output_bigbed, delete=False)
+        temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
         if not os.path.exists(bigNarrowPeak):            
-            pm.clean_add(temp.name)
-            cmd = ("zcat " + args.output_bed + "  | sort -k1,1 -k2,2n | awk '{print $1,$2,$3}' > " + temp.name)
-            pm.run(cmd, temp.name, clean=True)
+            pm.clean_add(temp)
+            cmd = ("zcat " + args.input_file + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+            pm.run(cmd, temp)
 
             chrom_sizes = get_chrom_sizes()
-
-            cmd = ("bedToBigBed -type=bed3 " +
-                    temp.name + " " + chrom_sizes + " " + bigNarrowPeak)
+            cmd = ("bedToBigBed " +
+                    temp + " " + chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
     else:
         cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
