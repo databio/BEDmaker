@@ -5,7 +5,7 @@ import pypiper
 import os
 import sys
 import tempfile
-# import pyBigWig
+import pandas as pd
 import gzip
 import shutil
 from refgenconf import RefGenConf as RGC, select_genome_config, RefgenconfError, CFG_ENV_VARS, CFG_FOLDER_KEY
@@ -21,7 +21,7 @@ parser.add_argument("-r", "--rfg-config", help="file path to the genome config f
 parser.add_argument("-o", "--output-bed", help="path to the output BED files", type=str)
 parser.add_argument("--output-bigbed", help="path to the output bigBed files", type=str)
 parser.add_argument("-s", "--sample-name", help="name of the sample used to systematically build the output name", type=str)
-parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
+#parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
 
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(parser, groups=["pypiper", "looper"],
@@ -73,42 +73,65 @@ def get_chrom_sizes():
 
     :return str: chrom.sizes file path
     """
-    
-    if args.chrom_sizes:
-        chrom_sizes = args.chrom_sizes
-    elif args.rfg_config:
-        print("Chrom.sizes file is not specified.  Determining path to chrom.sizes asset via Refgenie.")
-        # get path to the genome config; from arg or env var if arg not provided
-        refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
-        if not refgenie_cfg_path:
-            raise OSError("Could not determine path to a refgenie genome configuration file. "
-                          "Use --rfg-config argument or set '{}' environment variable to provide it".
-                          format(CFG_ENV_VARS))
-        if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
-            # file path not found, initialize a new config file
-            print("File '{}' does not exist. Initializing refgenie genome configuration file.".format(refgenie_cfg_path))
-            rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
-            rgc.initialize_config_file(filepath=refgenie_cfg_path)
-        else:
-            print("Reading refgenie genome configuration file from file: {}".format(refgenie_cfg_path))
-            rgc = RGC(filepath=refgenie_cfg_path)
-        try:
-            # get path to the chrom.sizes asset
-            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                        seek_key="chrom_sizes")
-        except RefgenconfError:
-            # if chrom.sizes not found, pull it first
-            print("Could not determine path to chrom.sizes asset, pulling")
-            rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
-            chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                        seek_key="chrom_sizes")
-        print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
-    else: 
-        raise OSError("Could not determine path to chrom.sizes file. "
-                    "Use --chrom-sizes argument to provide it, or "
-                    "--rfg-config argument to  provide the path to genome config file and determine chrom.sizes asset via Refgenie.")
+
+    print("Determining path to chrom.sizes asset via Refgenie.")
+    # get path to the genome config; from arg or env var if arg not provided
+    refgenie_cfg_path = select_genome_config(filename=args.rfg_config, check_exist=False)
+    if not refgenie_cfg_path:
+        raise OSError("Could not determine path to a refgenie genome configuration file. "
+                        "Use --rfg-config argument or set '{}' environment variable to provide it".
+                        format(CFG_ENV_VARS))
+    if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
+        # file path not found, initialize a new config file
+        print("File '{}' does not exist. Initializing refgenie genome configuration file.".format(refgenie_cfg_path))
+        rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
+        rgc.initialize_config_file(filepath=refgenie_cfg_path)
+    else:
+        print("Reading refgenie genome configuration file from file: {}".format(refgenie_cfg_path))
+        rgc = RGC(filepath=refgenie_cfg_path)
+    try:
+        # get path to the chrom.sizes asset
+        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                    seek_key="chrom_sizes")
+    except RefgenconfError:
+        # if chrom.sizes not found, pull it first
+        print("Could not determine path to chrom.sizes asset, pulling")
+        rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
+        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
+                                    seek_key="chrom_sizes")
+    print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
     
     return chrom_sizes
+
+def validate_genome_assembly():
+    """
+    validate the regions in the input bed file matches the chrom.sizes
+
+    :return bool
+    """
+
+    df_cs = pd.read_csv(chrom_sizes, sep="\t")
+    df_bed = pd.read_csv(args.output_bed, sep="\t")
+
+    print("Validating chromsome numbers for {}.".format(args.output_bed))
+
+    if df_bed[0].isin(df_cs[0]):
+        out_of_range = pd.DataFrame()
+        for index, row in df_bed.iterrows():
+            if df_bed[index][1] > df_cs[df_cs[0]==df_bed[index][0]][1] | df_bed[index][2] > df_cs[df_cs[0]==df_bed[index][0]][1]
+                out_of_range = out_of_range.append(row)
+        if out_of_range.empty:
+            return True
+        else:
+            print("The following regions in {} is out of range: {}".format(args.output_bed, out_of_range))
+            return False
+
+    else:
+        chrom_list = list(set(df_bed[0]).difference(df_cs[0]))
+        print("{} are not found in the chrom.sizes file.".format(chrom_list))
+        return False
+
+
 
 
 def main():
@@ -169,21 +192,25 @@ def main():
     pm.run(cmd, target=args.output_bed)
 
     print("Generating bigBed files for {}".format(args.input_file))
+    
     bedfile_name = os.path.split(args.output_bed)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file 
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
     if args.input_type != "bigBed":
-        temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
-        if not os.path.exists(bigNarrowPeak):            
-            pm.clean_add(temp)
-            cmd = ("zcat " + args.input_file + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
-            pm.run(cmd, temp)
+        chrom_sizes = get_chrom_sizes()
+        if validate_genome_assembly():
+            temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
+            if not os.path.exists(bigNarrowPeak):            
+                pm.clean_add(temp)
+                cmd = ("zcat " + args.input_file + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+                pm.run(cmd, temp)
 
-            chrom_sizes = get_chrom_sizes()
-            cmd = ("bedToBigBed " +
-                    temp + " " + chrom_sizes + " " + bigNarrowPeak)
-            pm.run(cmd, bigNarrowPeak, nofail=True)
+                cmd = ("bedToBigBed " +
+                        temp + " " + chrom_sizes + " " + bigNarrowPeak)
+                pm.run(cmd, bigNarrowPeak, nofail=True)
+        else: 
+            print("Fail to generating bigBed files for {}".format(args.input_file))
     else:
         cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
         pm.run(cmd)
