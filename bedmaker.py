@@ -9,6 +9,7 @@ import pandas as pd
 import gzip
 import shutil
 from refgenconf import RefGenConf as RGC, select_genome_config, RefgenconfError, CFG_ENV_VARS, CFG_FOLDER_KEY
+from yacman.exceptions import UndefinedAliasError
 
 parser = ArgumentParser(description="A pipeline to convert bigwig or bedgraph files into bed format")
 
@@ -91,38 +92,40 @@ def get_chrom_sizes():
         rgc = RGC(filepath=refgenie_cfg_path)
     try:
         # get path to the chrom.sizes asset
-        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                    seek_key="chrom_sizes")
-    except RefgenconfError:
+        chrom_sizes = rgc.seek(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key='chrom_sizes')
+        print (chrom_sizes)
+    except (UndefinedAliasError, RefgenconfError):
         # if chrom.sizes not found, pull it first
         print("Could not determine path to chrom.sizes asset, pulling")
-        rgc.pull_asset(genome=args.genome, asset="fasta", tag="default")
-        chrom_sizes = rgc.get_asset(genome_name=args.genome, asset_name="fasta", tag_name="default",
-                                    seek_key="chrom_sizes")
+        rgc.pull(genome=args.genome, asset="fasta", tag="default")
+        chrom_sizes = rgc.seek(genome_name=args.genome, asset_name="fasta", tag_name="default", seek_key='chrom_sizes')
+
     print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
     
     return chrom_sizes
 
-def validate_genome_assembly():
+def validate_genome_assembly(chrom_sizes, bed):
     """
     validate the regions in the input bed file matches the chrom.sizes
 
     :return bool
     """
 
-    df_cs = pd.read_csv(chrom_sizes, sep="\t")
-    df_bed = pd.read_csv(args.output_bed, sep="\t")
+    df_cs = pd.read_csv(chrom_sizes, sep="\t", header=None)
+    df_bed = pd.read_csv(bed, sep=" ", header=None)
 
     print("Validating chromsome numbers for {}.".format(args.output_bed))
-
-    if df_bed[0].isin(df_cs[0]):
+    if df_bed[0].isin(df_cs[0]).all(axis=None):
+        print("Validating region coordinates for {}.".format(args.output_bed))
         out_of_range = pd.DataFrame()
         for index, row in df_bed.iterrows():
-            if df_bed[index][1] > df_cs[df_cs[0]==df_bed[index][0]][1] | df_bed[index][2] > df_cs[df_cs[0]==df_bed[index][0]][1]
-                out_of_range = out_of_range.append(row)
+            size = df_cs[df_cs[0]==row[0]][1].values[0]
+            if row[1] > size or row[2] > size:
+                out_of_range = out_of_range.append(df_bed[index])
         if out_of_range.empty:
             return True
         else:
+            print (out_of_range)
             print("The following regions in {} is out of range: {}".format(args.output_bed, out_of_range))
             return False
 
@@ -199,18 +202,17 @@ def main():
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
     if args.input_type != "bigBed":
         chrom_sizes = get_chrom_sizes()
-        if validate_genome_assembly():
-            temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
-            if not os.path.exists(bigNarrowPeak):            
-                pm.clean_add(temp)
-                cmd = ("zcat " + args.input_file + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
-                pm.run(cmd, temp)
-
+        temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
+        if not os.path.exists(bigNarrowPeak):            
+            pm.clean_add(temp)
+            cmd = ("zcat " + args.input_file + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+            pm.run(cmd, temp)
+            if validate_genome_assembly(chrom_sizes, temp):
                 cmd = ("bedToBigBed " +
                         temp + " " + chrom_sizes + " " + bigNarrowPeak)
                 pm.run(cmd, bigNarrowPeak, nofail=True)
-        else: 
-            print("Fail to generating bigBed files for {}".format(args.input_file))
+            else: 
+                print("Fail to generating bigBed files for {}".format(args.input_file))
     else:
         cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
         pm.run(cmd)
