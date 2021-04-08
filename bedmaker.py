@@ -68,6 +68,8 @@ if not os.path.exists(logs_dir):
     print("bedmaker logs directory doesn't exist. Creating one...")
     os.makedirs(logs_dir)
 
+pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
+
 def get_chrom_sizes():
     """
     Get chrom.sizes file path by input arg, or Refegenie.
@@ -103,41 +105,52 @@ def get_chrom_sizes():
     print("Determined path to chrom.sizes asset: {}".format(chrom_sizes))
     
     return chrom_sizes
+
+
+def validate_genome_assembly(chrom_sizes, bed):
+    """
+    validate the regions in the input bed file matches the chrom.sizes
+
+    :return bool
+    """
     
+    print("Validating chromsome numbers for {}.".format(args.output_bed))
+    temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
+    pm.clean_add(temp)
 
-# def validate_genome_assembly(chrom_sizes, bed):
-#     """
-#     validate the regions in the input bed file matches the chrom.sizes
+    cmd = ("cut -d' ' -f1 " + bed + " | sort -u > " + temp)
+    pm.run(cmd, temp)
+    cmd = ("grep -owf " + temp + " " + chrom_sizes + " | uniq | grep -vf - " + temp)
+    chrom_num = pm.run(cmd, lock_name = "lock."+next(tempfile._get_candidate_names()))
+    print (chrom_num)
 
-#     :return bool
-#     """
 
-#     df_cs = pd.read_csv(chrom_sizes, sep="\t", header=None)
-#     df_bed = pd.read_csv(bed, sep=" ", header=None)
+    # df_cs = pd.read_csv(chrom_sizes, sep="\t", header=None)
+    # df_bed = pd.read_csv(bed, sep=" ", header=None)
 
-#     print("Validating chromsome numbers for {}.".format(args.output_bed))
-#     if df_bed[0].isin(df_cs[0]).all(axis=None):
-#         print("Validating region coordinates for {}.".format(args.output_bed))
-#         out_of_range = pd.DataFrame()
-#         for index, row in df_bed.iterrows():
-#             size = df_cs[df_cs[0]==row[0]][1].values[0]
-#             if row[1] > size or row[2] > size:
-#                 out_of_range = out_of_range.append(df_bed[index])
-#         if out_of_range.empty:
-#             return True
-#         else:
-#             print (out_of_range)
-#             print("The following regions in {} is out of range: {}".format(args.output_bed, out_of_range))
-#             return False
+    # print("Validating chromsome numbers for {}.".format(args.output_bed))
+    # if df_bed[0].isin(df_cs[0]).all(axis=None):
+    #     print("Validating region coordinates for {}.".format(args.output_bed))
+    #     out_of_range = pd.DataFrame()
+    #     for index, row in df_bed.iterrows():
+    #         size = df_cs[df_cs[0]==row[0]][1].values[0]
+    #         if row[1] > size or row[2] > size:
+    #             out_of_range = out_of_range.append(df_bed[index])
+    #     if out_of_range.empty:
+    #         return True
+    #     else:
+    #         print (out_of_range)
+    #         print("The following regions in {} is out of range: {}".format(args.output_bed, out_of_range))
+    #         return False
 
-#     else:
-#         chrom_list = list(set(df_bed[0]).difference(df_cs[0]))
-#         print("{} are not found in the chrom.sizes file.".format(chrom_list))
-#         return False
+    # else:
+    #     chrom_list = list(set(df_bed[0]).difference(df_cs[0]))
+    #     print("{} are not found in the chrom.sizes file.".format(chrom_list))
+    #     return False
 
 
 def main():
-    pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
+    # pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
 
@@ -159,13 +172,14 @@ def main():
     input_file = args.input_file
     # Use the gzip and shutil modules to produce temporary unzipped files
     if input_extension == ".gz":
-        input_file = os.path.join(os.path.dirname(args.output_bed),os.path.splitext(file_name)[0])
+        input_file = os.path.join(os.path.dirname(args.input_file),os.path.splitext(file_name)[0])
         with gzip.open(args.input_file, "rb") as f_in:
             with open(input_file, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         pm.clean_add(input_file)
-
-    temp_bed_path = os.path.splitext(args.output_bed)[0]
+        temp_bed_path = os.path.splitext(os.path.splitext(args.output_bed)[0])[0]+ '.bed'
+    else:
+        temp_bed_path = os.path.splitext(args.output_bed)[0] + '.bed'
 
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=input_file, output=temp_bed_path, width=width)
@@ -213,7 +227,7 @@ def main():
         except:
             print("Fail to generating bigBed files for {}".format(args.input_file))
     
-    # if args.input_type != "bigBed":
+    # if args.input_type != "bigBed":temp_bed_path = os.path.splitext(args.output_bed)[0]
     #     chrom_sizes = get_chrom_sizes()
     #     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
     #     if not os.path.exists(bigNarrowPeak):            
