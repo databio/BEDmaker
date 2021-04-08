@@ -206,11 +206,13 @@ def main():
         gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
 
     if args.input_type != "bed" or input_extension != ".gz":
-        if not isinstance(cmd, list):
-            cmd = [cmd]
         if args.input_type == "bed":
+            if not isinstance(gzip_cmd, list):
+                gzip_cmd = [gzip_cmd]
             cmd = gzip_cmd.append(cmd)
         else:
+            if not isinstance(cmd, list):
+                cmd = [cmd]
             cmd.append(gzip_cmd)
     pm.run(cmd, target=args.output_bed)
 
