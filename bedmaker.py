@@ -200,7 +200,7 @@ def main():
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
-    if args.input_type == "bed" and input_extension != ".gz"
+    if args.input_type == "bed" and input_extension != ".gz":
         gzip_cmd = gzip_template.format(unzipped_converted_file=input_file)
     else:
         gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
