@@ -214,7 +214,7 @@ def main():
 
     if args.input_type != "bed" or input_extension != ".gz":
         if args.input_type == "bed":
-            cmd = gzip_template.format(unzipped_converted_file=input_file)
+            cmd = [gzip_template.format(unzipped_converted_file=input_file)]
             cmd.append(bed_template.format(input=input_file+'.gz', output=output_bed))
         else:
             if not isinstance(cmd, list):
