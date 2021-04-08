@@ -52,6 +52,16 @@ file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
 #sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
+if args.input_type != "bed" 
+    if input_extension == ".gz":
+        output_bed = os.path.splitext(os.path.splitext(args.output_bed)[0])[0] + '.bed.gz'
+    else:
+        output_bed = os.path.splitext(args.output_bed)[0] + '.bed.gz'
+else:
+    if input_extension != ".gz"
+        output_bed = args.output_bed + '.gz'
+    else 
+        output_bed = args.output_bed
 
 bed_parent = os.path.dirname(args.output_bed)
 if not os.path.exists(bed_parent):
@@ -114,7 +124,7 @@ def validate_genome_assembly(chrom_sizes, bed):
     :return bool
     """
     
-    print("Validating chromsome numbers for {}.".format(args.output_bed))
+    print("Validating chromsome numbers for {}.".format(output_bed))
     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
     pm.clean_add(temp)
 
@@ -128,9 +138,9 @@ def validate_genome_assembly(chrom_sizes, bed):
     # df_cs = pd.read_csv(chrom_sizes, sep="\t", header=None)
     # df_bed = pd.read_csv(bed, sep=" ", header=None)
 
-    # print("Validating chromsome numbers for {}.".format(args.output_bed))
+    # print("Validating chromsome numbers for {}.".format(output_bed))
     # if df_bed[0].isin(df_cs[0]).all(axis=None):
-    #     print("Validating region coordinates for {}.".format(args.output_bed))
+    #     print("Validating region coordinates for {}.".format(output_bed))
     #     out_of_range = pd.DataFrame()
     #     for index, row in df_bed.iterrows():
     #         size = df_cs[df_cs[0]==row[0]][1].values[0]
@@ -140,7 +150,7 @@ def validate_genome_assembly(chrom_sizes, bed):
     #         return True
     #     else:
     #         print (out_of_range)
-    #         print("The following regions in {} is out of range: {}".format(args.output_bed, out_of_range))
+    #         print("The following regions in {} is out of range: {}".format(output_bed, out_of_range))
     #         return False
 
     # else:
@@ -177,9 +187,8 @@ def main():
             with open(input_file, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         pm.clean_add(input_file)
-        temp_bed_path = os.path.splitext(os.path.splitext(args.output_bed)[0])[0]+ '.bed'
-    else:
-        temp_bed_path = os.path.splitext(args.output_bed)[0] + '.bed'
+        
+    temp_bed_path = os.path.splitext(output_bed)[0]
 
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(input=input_file, output=temp_bed_path, width=width)
@@ -212,11 +221,11 @@ def main():
             cmd.insert(0, gzip_cmd)
         else:
             cmd.append(gzip_cmd)
-    pm.run(cmd, target=args.output_bed)
+    pm.run(cmd, target=output_bed)
 
     print("Generating bigBed files for {}".format(args.input_file))
     
-    bedfile_name = os.path.split(args.output_bed)[1]
+    bedfile_name = os.path.split(output_bed)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file 
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
@@ -225,7 +234,7 @@ def main():
     
     if not os.path.exists(bigNarrowPeak):            
         pm.clean_add(temp)
-        cmd = ("zcat " + args.output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+        cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
         pm.run(cmd, temp)
         try:
             cmd = ("bedToBigBed " +
@@ -234,12 +243,12 @@ def main():
         except:
             print("Fail to generating bigBed files for {}".format(args.input_file))
     
-    # if args.input_type != "bigBed":temp_bed_path = os.path.splitext(args.output_bed)[0]
+    # if args.input_type != "bigBed":temp_bed_path = os.path.splitext(output_bed)[0]
     #     chrom_sizes = get_chrom_sizes()
     #     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
     #     if not os.path.exists(bigNarrowPeak):            
     #         pm.clean_add(temp)
-    #         cmd = ("zcat " + args.output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+    #         cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
     #         pm.run(cmd, temp)
     #         if validate_genome_assembly(chrom_sizes, temp):
     #             cmd = ("bedToBigBed " +
