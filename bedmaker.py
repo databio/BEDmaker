@@ -196,15 +196,22 @@ def main():
     elif args.input_type == "bigBed":
         cmd = bigBed_template.format(input=input_file, output=temp_bed_path)
     elif args.input_type == "bed":
-        cmd = bed_template.format(input=args.input_file, output=args.output_bed)
+        cmd = bed_template.format(input=input_file, output=temp_bed_path)
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
-    gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
+    if args.input_type == "bed" and input_extension != ".gz"
+        gzip_cmd = gzip_template.format(unzipped_converted_file=input_file)
+    else:
+        gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
+
     if args.input_type != "bed" or input_extension != ".gz":
         if not isinstance(cmd, list):
             cmd = [cmd]
-        cmd.append(gzip_cmd)
+        if args.input_type == "bed":
+            cmd = gzip_cmd.append(cmd)
+        else:
+            cmd.append(gzip_cmd)
     pm.run(cmd, target=args.output_bed)
 
     print("Generating bigBed files for {}".format(args.input_file))
