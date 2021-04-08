@@ -52,15 +52,15 @@ file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
 #sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
-if args.input_type != "bed" 
+if args.input_type != "bed":
     if input_extension == ".gz":
         output_bed = os.path.splitext(os.path.splitext(args.output_bed)[0])[0] + '.bed.gz'
     else:
         output_bed = os.path.splitext(args.output_bed)[0] + '.bed.gz'
 else:
-    if input_extension != ".gz"
+    if input_extension != ".gz":
         output_bed = args.output_bed + '.gz'
-    else 
+    else:
         output_bed = args.output_bed
 
 bed_parent = os.path.dirname(args.output_bed)
