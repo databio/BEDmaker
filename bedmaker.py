@@ -233,10 +233,10 @@ def main():
     
     if not os.path.exists(bigNarrowPeak):            
         pm.clean_add(temp)
-        cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
+        cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3,$4,$5,$6}' |  sort -k1,1 -k2,2n > " + temp)
         pm.run(cmd, temp)
         try:
-            cmd = ("bedToBigBed " +
+            cmd = ("bedToBigBed -type=bed6 " +
                     temp + " " + chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak)
         except:
