@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 import pypiper
 import os
+import re
 import sys
 import tempfile
 import pandas as pd
@@ -117,46 +118,56 @@ def get_chrom_sizes():
     return chrom_sizes
 
 
-def validate_genome_assembly(chrom_sizes, bed):
+def get_bed_type(bed):
     """
-    validate the regions in the input bed file matches the chrom.sizes
+    get bed type
 
-    :return bool
+    :return bed type
     """
-    
-    print("Validating chromsome numbers for {}.".format(output_bed))
-    temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
-    pm.clean_add(temp)
+    # column format for bed12
+    col_format = ['O','int', 'int', 'O', [0,1000], ["+","-","."], 'int', 'int', 'int', 'int', '^(\d+(,\d+)*)?$', '^(\d+(,\d+)*)?$']
 
-    cmd = ("cut -d' ' -f1 " + bed + " | sort -u > " + temp)
-    pm.run(cmd, temp)
-    cmd = ("grep -owf " + temp + " " + chrom_sizes + " | uniq | grep -vf - " + temp)
-    chrom_num = pm.run(cmd, lock_name = "lock."+next(tempfile._get_candidate_names()))
-    print (chrom_num)
-
-
-    # df_cs = pd.read_csv(chrom_sizes, sep="\t", header=None)
-    # df_bed = pd.read_csv(bed, sep=" ", header=None)
-
-    # print("Validating chromsome numbers for {}.".format(output_bed))
-    # if df_bed[0].isin(df_cs[0]).all(axis=None):
-    #     print("Validating region coordinates for {}.".format(output_bed))
-    #     out_of_range = pd.DataFrame()
-    #     for index, row in df_bed.iterrows():
-    #         size = df_cs[df_cs[0]==row[0]][1].values[0]
-    #         if row[1] > size or row[2] > size:
-    #             out_of_range = out_of_range.append(df_bed[index])
-    #     if out_of_range.empty:
-    #         return True
-    #     else:
-    #         print (out_of_range)
-    #         print("The following regions in {} is out of range: {}".format(output_bed, out_of_range))
-    #         return False
-
-    # else:
-    #     chrom_list = list(set(df_bed[0]).difference(df_cs[0]))
-    #     print("{} are not found in the chrom.sizes file.".format(chrom_list))
-    #     return False
+	df = pd.read_csv(bed, sep="\t", header=None)
+	df = df.dropna(axis=1)
+	num_cols = len(df.columns)
+	bedtype = 0
+	for col in df:
+		if col == 4:
+			if df[col].dtype == "int":
+				print("here2")
+				if df[col].between(col_format[col][0], col_format[col][1]).all():
+					bedtype += 1
+				else:
+					n = num_cols - bedtype 
+					return (f"bed{bedtype}+{n}")
+			else:
+				n = num_cols - bedtype 
+				return (f"bed{bedtype}+{n}")
+		elif col == 5 :
+			if df[col].isin(col_format[col]).all():
+				bedtype += 1
+			else:
+				n = num_cols - bedtype 
+				return (f"bed{bedtype}+{n}")
+				
+		elif (col == 10 or col == 11 ):
+			if re.match(col_format[col], df[col]):
+				bedtype += 1 
+			else:
+				n = num_cols - bedtype 
+				return (f"bed{bedtype}+{n}")
+		elif col > 12:
+			n = num_cols - bedtype 
+			return (f"bed{bedtype}+{n}")
+			
+		else:
+			if df[col].dtype == col_format[col]:
+				bedtype +=1
+			else:
+				n = num_cols - bedtype 
+				return (f"bed{bedtype}+{n}")
+				
+	return (f"bed{bedtype}")
 
 
 def main():
@@ -233,10 +244,11 @@ def main():
     
     if not os.path.exists(bigNarrowPeak):            
         pm.clean_add(temp)
-        cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3,$4,$5,$6}' |  sort -k1,1 -k2,2n > " + temp)
+        cmd = ("zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp)
         pm.run(cmd, temp)
+        bedtype = get_bed_type(temp)
         try:
-            cmd = ("bedToBigBed -type=bed6 " +
+            cmd = ("bedToBigBed -type=" + bedtype +
                     temp + " " + chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak)
         except:
