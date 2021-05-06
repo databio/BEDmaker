@@ -134,7 +134,6 @@ def get_bed_type(bed):
 	for col in df:
 		if col == 4:
 			if df[col].dtype == "int":
-				print("here2")
 				if df[col].between(col_format[col][0], col_format[col][1]).all():
 					bedtype += 1
 				else:
@@ -151,7 +150,7 @@ def get_bed_type(bed):
 				return (f"bed{bedtype}+{n}")
 				
 		elif (col == 10 or col == 11 ):
-			if re.match(col_format[col], df[col]):
+			if df[col].str.match(col_format[col]).all():
 				bedtype += 1 
 			else:
 				n = num_cols - bedtype 
