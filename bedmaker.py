@@ -124,49 +124,78 @@ def get_bed_type(bed):
 
     :return bed type
     """
-    # column format for bed12
-    col_format = ['O','int', 'int', 'O', [0,1000], ["+","-","."], 'int', 'int', 'int', 'int', '^(\d+(,\d+)*)?$', '^(\d+(,\d+)*)?$']
+#    column format for bed12
+#    string chrom;       "Reference sequence chromosome or scaffold"
+#    uint   chromStart;  "Start position in chromosome"
+#    uint   chromEnd;    "End position in chromosome"
+#    string name;        "Name of item."
+#    uint score;          "Score (0-1000)"
+#    char[1] strand;     "+ or - for strand"
+#    uint thickStart;   "Start of where display should be thick (start codon)"
+#    uint thickEnd;     "End of where display should be thick (stop codon)"
+#    uint reserved;     "Used as itemRgb as of 2004-11-22"
+#    int blockCount;    "Number of blocks"
+#    int[blockCount] blockSizes; "Comma separated list of block sizes"
+#    int[blockCount] chromStarts; "Start positions relative to chromStart"
+    
+    df = pd.read_csv(bed, sep="\t", header=None)
+    df = df.dropna(axis=1)
+    num_cols = len(df.columns)
+    print (df)
+    bedtype = 0
+    for col in df:
+        if col <= 2:
+            if col == 0: 
+                if df[col].dtype == "O":
+                    bedtype += 1
+                else:
+                    return None
+            else:
+                if df[col].dtype == "int" and (df[col] >= 0).all():
+                    bedtype += 1
+                else:
+                    return None
+        else:
+            if col == 3:
+                if df[col].dtype == "O":
+                    bedtype += 1
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            elif col == 4:
+                if df[col].dtype == "int" and df[col].between(0, 1000).all():
+                        bedtype += 1
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            elif col == 5 :
+                if df[col].isin(["+","-","."]).all():
+                    bedtype += 1
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            elif (6<= col <= 8):
+                if df[col].dtype == "int" and (df[col] >= 0).all():
+                    bedtype += 1
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            elif col == 9 :
+                if df[col].dtype == "int" :
+                    bedtype += 1
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            elif (col == 10 or col == 11 ):
+                if df[col].str.match('^(\d+(,\d+)*)?$').all():
+                    bedtype += 1 
+                else:
+                    n = num_cols - bedtype 
+                    return (f"bed{bedtype}+{n}")
+            else :
+                n = num_cols - bedtype 
+                return (f"bed{bedtype}+{n}")
 
-	df = pd.read_csv(bed, sep="\t", header=None)
-	df = df.dropna(axis=1)
-	num_cols = len(df.columns)
-	bedtype = 0
-	for col in df:
-		if col == 4:
-			if df[col].dtype == "int":
-				if df[col].between(col_format[col][0], col_format[col][1]).all():
-					bedtype += 1
-				else:
-					n = num_cols - bedtype 
-					return (f"bed{bedtype}+{n}")
-			else:
-				n = num_cols - bedtype 
-				return (f"bed{bedtype}+{n}")
-		elif col == 5 :
-			if df[col].isin(col_format[col]).all():
-				bedtype += 1
-			else:
-				n = num_cols - bedtype 
-				return (f"bed{bedtype}+{n}")
-				
-		elif (col == 10 or col == 11 ):
-			if df[col].str.match(col_format[col]).all():
-				bedtype += 1 
-			else:
-				n = num_cols - bedtype 
-				return (f"bed{bedtype}+{n}")
-		elif col > 12:
-			n = num_cols - bedtype 
-			return (f"bed{bedtype}+{n}")
-			
-		else:
-			if df[col].dtype == col_format[col]:
-				bedtype +=1
-			else:
-				n = num_cols - bedtype 
-				return (f"bed{bedtype}+{n}")
-				
-	return (f"bed{bedtype}")
 
 
 def main():
@@ -216,7 +245,7 @@ def main():
         cmd = bigBed_template.format(input=input_file, output=temp_bed_path)
     elif args.input_type == "bed":
         if input_extension == ".gz":
-            cmd = bed_template.format(input=input_file, output=output_bed)
+            cmd = bed_template.format(input=args.input_file, output=output_bed)
     else:
         raise NotImplementedError("'{}' format is not supported".format(args.input_type))
 
@@ -246,29 +275,11 @@ def main():
         cmd = ("zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp)
         pm.run(cmd, temp)
         bedtype = get_bed_type(temp)
-        try:
-            cmd = ("bedToBigBed -type=" + bedtype +
-                    temp + " " + chrom_sizes + " " + bigNarrowPeak)
+        if bedtype is not None:
+            cmd = (f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}")
             pm.run(cmd, bigNarrowPeak)
-        except:
-            print("Fail to generating bigBed files for {}".format(args.input_file))
-    
-    # if args.input_type != "bigBed":temp_bed_path = os.path.splitext(output_bed)[0]
-    #     chrom_sizes = get_chrom_sizes()
-    #     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names())) 
-    #     if not os.path.exists(bigNarrowPeak):            
-    #         pm.clean_add(temp)
-    #         cmd = ("zcat " + output_bed + "  | awk '{print $1,$2,$3}' |  sort -k1,1 -k2,2n > " + temp)
-    #         pm.run(cmd, temp)
-    #         if validate_genome_assembly(chrom_sizes, temp):
-    #             cmd = ("bedToBigBed " +
-    #                     temp + " " + chrom_sizes + " " + bigNarrowPeak)
-    #             pm.run(cmd, bigNarrowPeak, nofail=True)
-    #         else: 
-    #             print("Fail to generating bigBed files for {}".format(args.input_file))     
-    # else:
-    #     cmd = "ln -s {input} {output}".format(input=args.input_file, output=bigNarrowPeak)
-    #     pm.run(cmd)
+        else:
+            print("Fail to generating bigBed files for {}: invalid bed format".format(args.input_file))
         
     pm.stop_pipeline()
 
