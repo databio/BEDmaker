@@ -22,6 +22,9 @@ properties:
           type: string
           description: "organism genome code"
           enum: ["hg18", "hg19", "hg38", "mm9", "mm10"]
+        rfg_config_path:
+          type: string
+          description: "file path to the genome config file"
         narrowpeak:
           type: boolean
           description: "whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)"
@@ -52,6 +55,7 @@ properties:
         - output_bed_path
         - output_bigbed_path
         - genome
+        - rfg_config_path
         - narrowpeak
         - sample_name
 required:
