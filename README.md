@@ -1,6 +1,6 @@
 # bedmaker
 
-Pypiper pipeline to convert supported file types* into BED format.
+Pypiper pipeline to convert supported file types* into BED format and bigBed format
 
 ## Before running the pipeline: 
 
