@@ -277,7 +277,10 @@ def main():
         bedtype = get_bed_type(temp)
         if bedtype is not None:
             cmd = (f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}")
-            pm.run(cmd, bigNarrowPeak)
+            try:
+               pm.run(cmd, bigNarrowPeak)
+            except:
+               print("Fail to generating bigBed files for {}: unable to validate genome assembly with Refgenie".format(args.input_file))
         else:
             print("Fail to generating bigBed files for {}: invalid bed format".format(args.input_file))
         
