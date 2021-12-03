@@ -48,7 +48,7 @@ parser.add_argument(
     help="name of the sample used to systematically build the output name",
     type=str,
 )
-# parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str)
+parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str, required=False)
 
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(
@@ -295,7 +295,7 @@ def main():
             input=input_file, output=temp_bed_path, width=width
         )
     elif args.input_type == "wig":
-        if args.chrom_sizes is None:
+        if args.chrom_sizes:
             chrom_sizes = get_chrom_sizes()
         else:
             chrom_sizes = args.chrom_sizes
@@ -340,7 +340,7 @@ def main():
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
-    if args.chrom_sizes is None:
+    if args.chrom_sizes:
         chrom_sizes = get_chrom_sizes()
     else:
         chrom_sizes = args.chrom_sizes
@@ -354,7 +354,7 @@ def main():
         if bedtype is not None:
             cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}"
             try:
-                pm.run(cmd, bigNarrowPeak)
+                pm.run(cmd, bigNarrowPeak, nofail=True)
             except:
                 print(
                     "Fail to generating bigBed files for {}: unable to validate genome assembly with Refgenie".format(
