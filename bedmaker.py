@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 import pypiper
@@ -340,7 +340,7 @@ def main():
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
-    if args.chrom_sizes:
+    if not args.chrom_sizes:
         chrom_sizes = get_chrom_sizes()
     else:
         chrom_sizes = args.chrom_sizes
@@ -352,7 +352,7 @@ def main():
         pm.run(cmd, temp)
         bedtype = get_bed_type(temp)
         if bedtype is not None:
-            cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}"
+            cmd = f"./bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}"
             try:
                 pm.run(cmd, bigNarrowPeak, nofail=True)
             except:
