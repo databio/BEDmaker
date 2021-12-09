@@ -17,6 +17,11 @@ from refgenconf import (
     CFG_FOLDER_KEY,
 )
 from yacman.exceptions import UndefinedAliasError
+import pandas as pd
+
+# Creating list of standard chromosome names:
+STANDARD_CHROM_LIST = ["chr"+str(chr_nb) for chr_nb in list(range(1, 23))]
+STANDARD_CHROM_LIST[len(STANDARD_CHROM_LIST):] = ["chrX", "chrY", "chrM"]
 
 parser = ArgumentParser(
     description="A pipeline to convert bigwig or bedgraph files into bed format"
@@ -52,6 +57,8 @@ parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes requir
 parser = pypiper.add_pypiper_args(
     parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
 )
+parser.add_argument("--standard-chrom", help="Standardize chromosome names. Default: False",
+                    action="store_false")
 
 args = parser.parse_args()
 
@@ -69,7 +76,8 @@ bigWig_template = (
 # wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip"
 # bed default link
-bed_template = "ln -s {input} {output}"
+# bed_template = "ln -s {input} {output}"
+bed_template = "cp {input} {output}"
 # gzip output files
 gzip_template = "gzip {unzipped_converted_file} "
 
@@ -247,6 +255,14 @@ def get_bed_type(bed):
                 return f"bed{bedtype}+{n}"
 
 
+def standardize_chrom(input_file, output_file=None):
+    if output_file is None:
+        output_file = input_file
+    original_file = pd.read_csv(input_file, header=None, sep="\t")
+    standard_file = original_file[original_file.loc[:, 0].isin(STANDARD_CHROM_LIST)]
+    standard_file.to_csv(output_file, compression='gzip', sep="\t", header=False, index=False)
+
+
 def main():
     # pm = pypiper.PipelineManager(name="bedmaker", outfolder=logs_dir, args=args) # ArgParser and add_pypiper_args
 
@@ -310,8 +326,11 @@ def main():
         if input_extension == ".gz":
             cmd = bed_template.format(input=args.input_file, output=output_bed)
         else:
-            cmd = [gzip_template.format(unzipped_converted_file=input_file),
-                   bed_template.format(input=input_file + ".gz", output=output_bed)]
+            # cmd = [gzip_template.format(unzipped_converted_file=input_file),
+            #        bed_template.format(input=input_file + ".gz", output=output_bed)]
+            cmd = [bed_template.format(input=input_file, output=os.path.splitext(output_bed)[0]),
+                   gzip_template.format(unzipped_converted_file=os.path.splitext(output_bed)[0])]
+
     else:
         raise NotImplementedError(f"'{args.input_type}' format is not supported")
 
@@ -321,6 +340,10 @@ def main():
             cmd = [cmd]
         cmd.append(gzip_cmd)
     pm.run(cmd, target=output_bed)
+
+    if args.standard_chrom:
+        print("Standardizing chromosomes...")
+        standardize_chrom(output_bed)
 
     print(f"Generating bigBed files for {args.input_file}")
 
