@@ -78,6 +78,7 @@ gzip_template = "gzip {unzipped_converted_file} "
 file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
+output_bed_extension = os.path.splitext(args.output_bed)[1]
 # sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
 if args.input_type != "bed":
     if input_extension == ".gz":
@@ -87,7 +88,7 @@ if args.input_type != "bed":
     else:
         output_bed = os.path.splitext(args.output_bed)[0] + ".bed.gz"
 else:
-    if input_extension != ".gz":
+    if input_extension != ".gz" and output_bed_extension != ".gz":
         output_bed = args.output_bed + ".gz"
     else:
         output_bed = args.output_bed
@@ -118,6 +119,9 @@ def get_chrom_sizes():
 
     :return str: chrom.sizes file path
     """
+
+    if args.chrom_sizes:
+        return args.chrom_sizes
 
     print("Determining path to chrom.sizes asset via Refgenie.")
     # get path to the genome config; from arg or env var if arg not provided
@@ -275,7 +279,6 @@ def main():
         pm.clean_add(input_file)
 
     temp_bed_path = os.path.splitext(output_bed)[0]
-
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(
             input=input_file, output=temp_bed_path, width=width
@@ -285,10 +288,9 @@ def main():
             input=input_file, output=temp_bed_path, width=width
         )
     elif args.input_type == "wig":
-        if args.chrom_sizes:
-            chrom_sizes = get_chrom_sizes()
-        else:
-            chrom_sizes = args.chrom_sizes
+
+        chrom_sizes = get_chrom_sizes()
+
         # define a target for temporary bw files
         temp_target = os.path.join(bed_parent, file_id + ".bw")
         pm.clean_add(temp_target)
@@ -307,19 +309,17 @@ def main():
     elif args.input_type == "bed":
         if input_extension == ".gz":
             cmd = bed_template.format(input=args.input_file, output=output_bed)
+        else:
+            cmd = [gzip_template.format(unzipped_converted_file=input_file),
+                   bed_template.format(input=input_file + ".gz", output=output_bed)]
     else:
         raise NotImplementedError(f"'{args.input_type}' format is not supported")
 
-    gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
-
-    if args.input_type != "bed" or input_extension != ".gz":
-        if args.input_type == "bed":
-            cmd = [gzip_template.format(unzipped_converted_file=input_file)]
-            cmd.append(bed_template.format(input=input_file + ".gz", output=output_bed))
-        else:
-            if not isinstance(cmd, list):
-                cmd = [cmd]
-            cmd.append(gzip_cmd)
+    if args.input_type != "bed" and input_extension != ".gz":
+        gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
+        if not isinstance(cmd, list):
+            cmd = [cmd]
+        cmd.append(gzip_cmd)
     pm.run(cmd, target=output_bed)
 
     print(f"Generating bigBed files for {args.input_file}")
@@ -328,10 +328,9 @@ def main():
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
     # Produce bigBed (bigNarrowPeak) file from peak file
     bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
-    if not args.chrom_sizes:
-        chrom_sizes = get_chrom_sizes()
-    else:
-        chrom_sizes = args.chrom_sizes
+
+    chrom_sizes = get_chrom_sizes()
+
     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
 
     if not os.path.exists(bigNarrowPeak):
