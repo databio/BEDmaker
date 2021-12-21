@@ -201,9 +201,15 @@ def get_bed_type(bed):
     #    int blockCount;    "Number of blocks"
     #    int[blockCount] blockSizes; "Comma separated list of block sizes"
     #    int[blockCount] chromStarts; "Start positions relative to chromStart"
-
     df = pd.read_csv(bed, sep="\t", header=None)
     df = df.dropna(axis=1)
+
+    # standardizing chromosome names
+    if args.standard_chrom:
+        print("Standardizing chromosomes...")
+        df = df[df.loc[:, 0].isin(STANDARD_CHROM_LIST)]
+        df.to_csv(bed, compression='gzip', sep="\t", header=False, index=False)
+
     num_cols = len(df.columns)
     print(df)
     bedtype = 0
@@ -259,14 +265,6 @@ def get_bed_type(bed):
             else:
                 n = num_cols - bedtype
                 return f"bed{bedtype}+{n}"
-
-
-def standardize_chrom(input_file, output_file=None):
-    if output_file is None:
-        output_file = input_file
-    original_file = pd.read_csv(input_file, header=None, sep="\t")
-    standard_file = original_file[original_file.loc[:, 0].isin(STANDARD_CHROM_LIST)]
-    standard_file.to_csv(output_file, compression='gzip', sep="\t", header=False, index=False)
 
 
 def main():
@@ -347,10 +345,6 @@ def main():
         cmd.append(gzip_cmd)
     pm.run(cmd, target=output_bed)
 
-    if args.standard_chrom:
-        print("Standardizing chromosomes...")
-        standardize_chrom(output_bed)
-
     print(f"Generating bigBed files for {args.input_file}")
 
     bedfile_name = os.path.split(output_bed)[1]
@@ -363,12 +357,12 @@ def main():
     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
 
     if not os.path.exists(big_narrow_peak):
+        bedtype = get_bed_type(output_bed)
         pm.clean_add(temp)
         cmd = "zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp
         pm.run(cmd, temp)
-        bedtype = get_bed_type(temp)
         if bedtype is not None:
-            cmd = f"./bedToBigBed -type={bedtype} {temp} {chrom_sizes} {big_narrow_peak}"
+            cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {big_narrow_peak}"
             try:
                 pm.run(cmd, big_narrow_peak, nofail=True)
             except Exception as err:
