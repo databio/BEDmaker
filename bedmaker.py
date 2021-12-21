@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 import pypiper
 import os
-import re
+# import re
 import sys
 import tempfile
 import pandas as pd
@@ -17,15 +17,13 @@ from refgenconf import (
     CFG_FOLDER_KEY,
 )
 from yacman.exceptions import UndefinedAliasError
-import pandas as pd
 
+# CONSTANTS
 # Creating list of standard chromosome names:
-STANDARD_CHROM_LIST = ["chr"+str(chr_nb) for chr_nb in list(range(1, 23))]
+STANDARD_CHROM_LIST = ["chr" + str(chr_nb) for chr_nb in list(range(1, 23))]
 STANDARD_CHROM_LIST[len(STANDARD_CHROM_LIST):] = ["chrX", "chrY", "chrM"]
 
-parser = ArgumentParser(
-    description="A pipeline to convert bigwig or bedgraph files into bed format"
-)
+parser = ArgumentParser(description="A pipeline to convert bigwig or bedgraph files into bed format")
 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
 parser.add_argument(
@@ -50,15 +48,23 @@ parser.add_argument(
     help="name of the sample used to systematically build the output name",
     type=str,
 )
-parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion",
-                    type=str, required=False)
-
+parser.add_argument(
+    "--chrom-sizes",
+    help="a full path to the chrom.sizes required for the bedtobigbed conversion",
+    type=str,
+    required=False
+)
+parser.add_argument(
+    "--standard-chrom",
+    help="Standardize chromosome names. Default: False",
+    action="store_true"
+)
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(
-    parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
+    parser,
+    groups=["pypiper", "looper"],
+    required=["--input-file", "--input-type"]
 )
-parser.add_argument("--standard-chrom", help="Standardize chromosome names. Default: False",
-                    action="store_false")
 
 args = parser.parse_args()
 
@@ -349,25 +355,26 @@ def main():
 
     bedfile_name = os.path.split(output_bed)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
-    # Produce bigBed (bigNarrowPeak) file from peak file
-    bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
+    # Produce bigBed (big_narrow_peak) file from peak file
+    big_narrow_peak = os.path.join(args.output_bigbed, fileid + ".bigBed")
 
     chrom_sizes = get_chrom_sizes()
 
     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
 
-    if not os.path.exists(bigNarrowPeak):
+    if not os.path.exists(big_narrow_peak):
         pm.clean_add(temp)
         cmd = "zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp
         pm.run(cmd, temp)
         bedtype = get_bed_type(temp)
         if bedtype is not None:
-            cmd = f"./bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}"
+            cmd = f"./bedToBigBed -type={bedtype} {temp} {chrom_sizes} {big_narrow_peak}"
             try:
-                pm.run(cmd, bigNarrowPeak, nofail=True)
-            except:
+                pm.run(cmd, big_narrow_peak, nofail=True)
+            except Exception as err:
                 print(
-                    f"Fail to generating bigBed files for {args.input_file}: unable to validate genome assembly with Refgenie"
+                    f"Fail to generating bigBed files for {args.input_file}: "
+                    f"unable to validate genome assembly with Refgenie. Error: {err}"
                 )
         else:
             print(f"Fail to generating bigBed files for {args.input_file}: invalid bed format")
