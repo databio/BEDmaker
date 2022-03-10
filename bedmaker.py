@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 import pypiper
 import os
-import re
+# import re
 import sys
 import tempfile
 import pandas as pd
@@ -18,10 +18,12 @@ from refgenconf import (
 )
 from yacman.exceptions import UndefinedAliasError
 
-parser = ArgumentParser(
-    description="A pipeline to convert bigwig or bedgraph files into bed format"
-)
+# CONSTANTS
+# Creating list of standard chromosome names:
+STANDARD_CHROM_LIST = ["chr" + str(chr_nb) for chr_nb in list(range(1, 23))]
+STANDARD_CHROM_LIST[len(STANDARD_CHROM_LIST):] = ["chrX", "chrY", "chrM"]
 
+parser = ArgumentParser(description="A pipeline to convert bigwig or bedgraph files into bed format")
 
 parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
 parser.add_argument(
@@ -37,9 +39,7 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument("-g", "--genome", help="reference genome", type=str)
-parser.add_argument(
-    "-r", "--rfg-config", help="file path to the genome config file", type=str
-)
+parser.add_argument("-r", "--rfg-config", help="file path to the genome config file", type=str)
 parser.add_argument("-o", "--output-bed", help="path to the output BED files", type=str)
 parser.add_argument("--output-bigbed", help="path to the output bigBed files", type=str)
 parser.add_argument(
@@ -48,11 +48,22 @@ parser.add_argument(
     help="name of the sample used to systematically build the output name",
     type=str,
 )
-parser.add_argument("--chrom-sizes", help="a full path to the chrom.sizes required for the bedtobigbed conversion", type=str, required=False)
-
+parser.add_argument(
+    "--chrom-sizes",
+    help="a full path to the chrom.sizes required for the bedtobigbed conversion",
+    type=str,
+    required=False
+)
+parser.add_argument(
+    "--standard-chrom",
+    help="Standardize chromosome names. Default: False",
+    action="store_true"
+)
 # add pypiper args to make pipeline looper compatible
 parser = pypiper.add_pypiper_args(
-    parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
+    parser,
+    groups=["pypiper", "looper"],
+    required=["--input-file", "--input-type"]
 )
 
 args = parser.parse_args()
@@ -71,7 +82,8 @@ bigWig_template = (
 # wig_template =  "wigToBigWig {input} {chrom_sizes} /dev/stdout -clip | bigWigToBedGraph /dev/stdin  /dev/stdout | macs2 {width} -i /dev/stdin -o {output}"
 wig_template = "wigToBigWig {input} {chrom_sizes} {intermediate_bw} -clip"
 # bed default link
-bed_template = "ln -s {input} {output}"
+# bed_template = "ln -s {input} {output}"
+bed_template = "cp {input} {output}"
 # gzip output files
 gzip_template = "gzip {unzipped_converted_file} "
 
@@ -80,27 +92,28 @@ gzip_template = "gzip {unzipped_converted_file} "
 file_name = os.path.basename(args.input_file)
 file_id = os.path.splitext(file_name)[0]
 input_extension = os.path.splitext(file_name)[1]  # is it gzipped or not?
+output_bed_extension = os.path.splitext(args.output_bed)[1]
 # sample_folder = os.path.join(out_parent, args.sample_name)  # specific output folder for each sample log and stats
 if args.input_type != "bed":
     if input_extension == ".gz":
         output_bed = (
-            os.path.splitext(os.path.splitext(args.output_bed)[0])[0] + ".bed.gz"
+                os.path.splitext(os.path.splitext(args.output_bed)[0])[0] + ".bed.gz"
         )
     else:
         output_bed = os.path.splitext(args.output_bed)[0] + ".bed.gz"
 else:
-    if input_extension != ".gz":
+    if input_extension != ".gz" and output_bed_extension != ".gz":
         output_bed = args.output_bed + ".gz"
     else:
         output_bed = args.output_bed
 
 bed_parent = os.path.dirname(args.output_bed)
 if not os.path.exists(bed_parent):
-    print("Output directory does not exist. Creating: {}".format(bed_parent))
+    print(f"Output directory does not exist. Creating: {bed_parent}")
     os.makedirs(bed_parent)
 
 if not os.path.exists(args.output_bigbed):
-    print("BigBed directory does not exist. Creating: {}".format(args.output_bigbed))
+    print(f"BigBed directory does not exist. Creating: {args.output_bigbed}")
     os.makedirs(args.output_bigbed)
 
 logs_name = "bedmaker_logs"
@@ -121,6 +134,9 @@ def get_chrom_sizes():
     :return str: chrom.sizes file path
     """
 
+    if args.chrom_sizes:
+        return args.chrom_sizes
+
     print("Determining path to chrom.sizes asset via Refgenie.")
     # get path to the genome config; from arg or env var if arg not provided
     refgenie_cfg_path = select_genome_config(
@@ -135,19 +151,11 @@ def get_chrom_sizes():
         )
     if isinstance(refgenie_cfg_path, str) and not os.path.exists(refgenie_cfg_path):
         # file path not found, initialize a new config file
-        print(
-            "File '{}' does not exist. Initializing refgenie genome configuration file.".format(
-                refgenie_cfg_path
-            )
-        )
+        print(f"File '{refgenie_cfg_path}' does not exist. Initializing refgenie genome configuration file.")
         rgc = RGC(entries={CFG_FOLDER_KEY: os.path.dirname(refgenie_cfg_path)})
         rgc.initialize_config_file(filepath=refgenie_cfg_path)
     else:
-        print(
-            "Reading refgenie genome configuration file from file: {}".format(
-                refgenie_cfg_path
-            )
-        )
+        print(f"Reading refgenie genome configuration file from file: {refgenie_cfg_path}")
         rgc = RGC(filepath=refgenie_cfg_path)
     try:
         # get path to the chrom.sizes asset
@@ -193,9 +201,15 @@ def get_bed_type(bed):
     #    int blockCount;    "Number of blocks"
     #    int[blockCount] blockSizes; "Comma separated list of block sizes"
     #    int[blockCount] chromStarts; "Start positions relative to chromStart"
-
     df = pd.read_csv(bed, sep="\t", header=None)
     df = df.dropna(axis=1)
+
+    # standardizing chromosome names
+    if args.standard_chrom:
+        print("Standardizing chromosomes...")
+        df = df[df.loc[:, 0].isin(STANDARD_CHROM_LIST)]
+        df.to_csv(bed, compression='gzip', sep="\t", header=False, index=False)
+
     num_cols = len(df.columns)
     print(df)
     bedtype = 0
@@ -258,9 +272,9 @@ def main():
 
     # Define target folder for converted files and implement the conversions; True=TF_Chipseq False=Histone_Chipseq
 
-    print("Got input type: {}".format(args.input_type))
+    print(f"Got input type: {args.input_type}")
     if not args.input_type == "bed":
-        print("Converting {} to BED format".format(args.input_file))
+        print(f"Converting {args.input_file} to BED format")
 
     # Define whether Chip-seq data has broad or narrow peaks
     width = "bdgbroadcall" if not args.narrowpeak else "bdgpeakcall"
@@ -285,7 +299,6 @@ def main():
         pm.clean_add(input_file)
 
     temp_bed_path = os.path.splitext(output_bed)[0]
-
     if args.input_type == "bedGraph":
         cmd = bedGraph_template.format(
             input=input_file, output=temp_bed_path, width=width
@@ -295,10 +308,9 @@ def main():
             input=input_file, output=temp_bed_path, width=width
         )
     elif args.input_type == "wig":
-        if args.chrom_sizes:
-            chrom_sizes = get_chrom_sizes()
-        else:
-            chrom_sizes = args.chrom_sizes
+
+        chrom_sizes = get_chrom_sizes()
+
         # define a target for temporary bw files
         temp_target = os.path.join(bed_parent, file_id + ".bw")
         pm.clean_add(temp_target)
@@ -317,56 +329,49 @@ def main():
     elif args.input_type == "bed":
         if input_extension == ".gz":
             cmd = bed_template.format(input=args.input_file, output=output_bed)
-    else:
-        raise NotImplementedError(
-            "'{}' format is not supported".format(args.input_type)
-        )
-
-    gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
-
-    if args.input_type != "bed" or input_extension != ".gz":
-        if args.input_type == "bed":
-            cmd = [gzip_template.format(unzipped_converted_file=input_file)]
-            cmd.append(bed_template.format(input=input_file + ".gz", output=output_bed))
         else:
-            if not isinstance(cmd, list):
-                cmd = [cmd]
-            cmd.append(gzip_cmd)
+            # cmd = [gzip_template.format(unzipped_converted_file=input_file),
+            #        bed_template.format(input=input_file + ".gz", output=output_bed)]
+            cmd = [bed_template.format(input=input_file, output=os.path.splitext(output_bed)[0]),
+                   gzip_template.format(unzipped_converted_file=os.path.splitext(output_bed)[0])]
+
+    else:
+        raise NotImplementedError(f"'{args.input_type}' format is not supported")
+
+    if args.input_type != "bed" and input_extension != ".gz":
+        gzip_cmd = gzip_template.format(unzipped_converted_file=temp_bed_path)
+        if not isinstance(cmd, list):
+            cmd = [cmd]
+        cmd.append(gzip_cmd)
     pm.run(cmd, target=output_bed)
 
-    print("Generating bigBed files for {}".format(args.input_file))
+    print(f"Generating bigBed files for {args.input_file}")
 
     bedfile_name = os.path.split(output_bed)[1]
     fileid = os.path.splitext(os.path.splitext(bedfile_name)[0])[0]
-    # Produce bigBed (bigNarrowPeak) file from peak file
-    bigNarrowPeak = os.path.join(args.output_bigbed, fileid + ".bigBed")
-    if args.chrom_sizes:
-        chrom_sizes = get_chrom_sizes()
-    else:
-        chrom_sizes = args.chrom_sizes
+    # Produce bigBed (big_narrow_peak) file from peak file
+    big_narrow_peak = os.path.join(args.output_bigbed, fileid + ".bigBed")
+
+    chrom_sizes = get_chrom_sizes()
+
     temp = os.path.join(args.output_bigbed, next(tempfile._get_candidate_names()))
 
-    if not os.path.exists(bigNarrowPeak):
+    if not os.path.exists(big_narrow_peak):
+        bedtype = get_bed_type(output_bed)
         pm.clean_add(temp)
         cmd = "zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp
         pm.run(cmd, temp)
-        bedtype = get_bed_type(temp)
         if bedtype is not None:
-            cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {bigNarrowPeak}"
+            cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {big_narrow_peak}"
             try:
-                pm.run(cmd, bigNarrowPeak, nofail=True)
-            except:
+                pm.run(cmd, big_narrow_peak, nofail=True)
+            except Exception as err:
                 print(
-                    "Fail to generating bigBed files for {}: unable to validate genome assembly with Refgenie".format(
-                        args.input_file
-                    )
+                    f"Fail to generating bigBed files for {args.input_file}: "
+                    f"unable to validate genome assembly with Refgenie. Error: {err}"
                 )
         else:
-            print(
-                "Fail to generating bigBed files for {}: invalid bed format".format(
-                    args.input_file
-                )
-            )
+            print(f"Fail to generating bigBed files for {args.input_file}: invalid bed format")
 
     pm.stop_pipeline()
 
