@@ -58,5 +58,6 @@ properties:
         - rfg_config_path
         - narrowpeak
         - sample_name
+        - format
 required:
   - samples
