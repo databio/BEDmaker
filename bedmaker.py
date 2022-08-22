@@ -359,9 +359,9 @@ def main():
     if not os.path.exists(big_narrow_peak):
         bedtype = get_bed_type(output_bed)
         pm.clean_add(temp)
-        cmd = "zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp
-        pm.run(cmd, temp)
         if bedtype is not None:
+            cmd = "zcat " + output_bed + "  | sort -k1,1 -k2,2n > " + temp
+            pm.run(cmd, temp)
             cmd = f"bedToBigBed -type={bedtype} {temp} {chrom_sizes} {big_narrow_peak}"
             try:
                 pm.run(cmd, big_narrow_peak, nofail=True)
@@ -371,7 +371,16 @@ def main():
                     f"unable to validate genome assembly with Refgenie. Error: {err}"
                 )
         else:
-            print(f"Fail to generating bigBed files for {args.input_file}: invalid bed format")
+            cmd = "zcat " + output_bed + " | awk '{ print $1, $2, $3 }'| sort -k1,1 -k2,2n > " + temp
+            pm.run(cmd, temp)
+            cmd = f"bedToBigBed -type=bed3 {temp} {chrom_sizes} {big_narrow_peak}"
+            try:
+                pm.run(cmd, big_narrow_peak, nofail=True)
+            except Exception as err:
+                print(
+                    f"Fail to generating bigBed files for {args.input_file}: "
+                    f"unable to validate genome assembly with Refgenie. Error: {err}"
+                )
 
     pm.stop_pipeline()
 
