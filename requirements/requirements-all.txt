@@ -1,0 +1,9 @@
+loopercli
+argparse>=1.4.0
+refgenconf>=0.12.2
+piper==0.12.3
+# pyBigWig==0.3.18
+ubiquerg>=0.6.2
+logmuse>=0.2.7
+yacman>=0.8.4
+pandas>=1.4.4

@@ -8,7 +8,7 @@ Users will need to format metadata as a Portable Encapsulated Project (PEP). Loo
 
 ### Validate the PEP with [`eido`](https://github.com/pepkit/eido)
 
-The input PEP can be validated against the [JSON schema in this repository](pep_schema.yaml). This ensures the PEP consists of all required attributes to run `bedmaker` pipeline.
+The input PEP can be validated against the [JSON schema in this repository](schemas/pep_schema.yaml). This ensures the PEP consists of all required attributes to run `bedmaker` pipeline.
 
 ```
 eido -p <path/to/pep> -s pep_schema.yaml
