@@ -1,4 +1,4 @@
-loopercli
+loopercli>=0.12.6
 argparse>=1.4.0
 refgenconf>=0.12.2
 piper==0.12.3

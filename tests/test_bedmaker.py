@@ -1,6 +1,7 @@
 import bedmaker
 import pytest
 
+
 class TestModules:
     """
     Testing input parser
@@ -8,5 +9,3 @@ class TestModules:
 
     def test_bed_type(self):
         assert True
-
-

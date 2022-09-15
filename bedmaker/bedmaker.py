@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 import pypiper
 import os
+
 # import re
 import sys
 import tempfile
@@ -433,7 +434,7 @@ class BedMaker:
                         n = num_cols - bedtype
                         return f"bed{bedtype}+{n}"
                 elif col == 10 or col == 11:
-                    if df[col].str.match("^(\d+(,\d+)*)?$").all():
+                    if df[col].str.match(r"^(\d+(,\d+)*)?$").all():
                         bedtype += 1
                     else:
                         n = num_cols - bedtype

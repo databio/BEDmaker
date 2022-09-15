@@ -50,12 +50,12 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
     keywords="project, bioinformatics, sequencing, ngs, workflow",
-    url="https://github.com/pepkit/{}/".format(PACKAGE),
+    url="https://github.com/databio/{}/".format(PACKAGE),
     author="Oleksandr Khoroshevskyi, Bingjie Xue, Jose E. Verdezoto Mosquera",
     license="BSD2",
     entry_points={
         "console_scripts": [
-            "geofetch = bedmaker.bedmaker:main",
+            "bedmaker = bedmaker.bedmaker:main",
         ],
     },
     package_data={PACKAGE: ["templates/*"]},
