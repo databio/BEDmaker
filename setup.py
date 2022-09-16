@@ -56,6 +56,7 @@ setup(
     entry_points={
         "console_scripts": [
             "bedmaker = bedmaker.bedmaker:main",
+            "bedmqc = bedmaker.bedqc:main",
         ],
     },
     package_data={PACKAGE: ["templates/*"]},

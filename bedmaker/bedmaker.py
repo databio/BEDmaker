@@ -21,6 +21,7 @@ from refgenconf import (
 import logmuse
 from yacman.exceptions import UndefinedAliasError
 from ubiquerg import is_command_callable
+from .bedqc import run_bedqc, QualityException
 
 
 class BedMaker:
@@ -40,11 +41,13 @@ class BedMaker:
         chrom_sizes: str = None,
         narrowpeak: bool = False,
         standard_chrom: bool = False,
+        check_qc: bool = True,
         opts=None,
         **kwargs,
     ):
         """
         A pipeline to convert bigwig, bedGraph, bed, bigBed or wig files into bed and bigBed format
+        :param check_qc: run quality control during badmaking
         :param input_file: path to the input file
         :param input_type: a [bigwig|bedgraph|bed|bigbed|wig] file that will be converted into BED format
         :param output_bed: path to the output BED files
@@ -72,6 +75,7 @@ class BedMaker:
         self.genome = genome
         self.rfg_config = rfg_config
         self.chrom_sizes = chrom_sizes
+        self.check_qc = check_qc
 
         self.narrowpeak = narrowpeak
         # Define whether Chip-seq data has broad or narrow peaks
@@ -247,6 +251,11 @@ class BedMaker:
                 cmd = [cmd]
             cmd.append(gzip_cmd)
         self.pm.run(cmd, target=self.output_bed)
+
+        if self.check_qc:
+            qc = run_bedqc(self.output_bed, outfolder=self.bed_parent)
+            if len(qc) > 0:
+                raise QualityException("qc")
 
         self._LOGGER.info(f"Generating bigBed files for: {self.input_file}")
 
