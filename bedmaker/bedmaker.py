@@ -255,7 +255,7 @@ class BedMaker:
         if self.check_qc:
             qc = run_bedqc(self.output_bed, outfolder=self.bed_parent)
             if len(qc) > 0:
-                raise QualityException("qc")
+                raise QualityException(str(qc))
 
         self._LOGGER.info(f"Generating bigBed files for: {self.input_file}")
 
