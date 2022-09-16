@@ -21,7 +21,6 @@ properties:
         genome:
           type: string
           description: "organism genome code"
-          enum: ["hg18", "hg19", "hg38", "mm9", "mm10"]
         rfg_config_path:
           type: string
           description: "file path to the genome config file"
