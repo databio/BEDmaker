@@ -17,7 +17,11 @@ bed_files_correct = [os.path.join(cor_dir, d) for d in os.listdir(cor_dir)]
 incor_dir = "tests/data/bed/incorrect"
 bed_files_incorrect = [os.path.join(incor_dir, d) for d in os.listdir(incor_dir)]
 
-@pytest.mark.skipif(True, reason="Error in exiting pytests, should be fixe:  OSError: [Errno 29] Illegal seek")
+
+@pytest.mark.skipif(
+    True,
+    reason="Error in exiting pytests, should be fixe:  OSError: [Errno 29] Illegal seek",
+)
 class TestBedqc:
     """
     Testing input parser
