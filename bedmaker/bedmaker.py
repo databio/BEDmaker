@@ -453,67 +453,109 @@ class BedMaker:
                     return f"bed{bedtype}+{n}"
 
 
-def _parse_cmdl(cmdl):
-    """
-    parser
-    """
-    parser = ArgumentParser(
-        description="A pipeline to convert bigwig or bedgraph files into bed format"
-    )
+class ParseOpt(object):
 
-    parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
-    parser.add_argument(
-        "-n",
-        "--narrowpeak",
-        help="whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)",
-        type=bool,
-    )
-    parser.add_argument(
-        "-t",
-        "--input-type",
-        help="a bigwig or a bedgraph file that will be converted into BED format",
-        type=str,
-    )
-    parser.add_argument("-g", "--genome", help="reference genome", type=str)
-    parser.add_argument(
-        "-r", "--rfg-config", help="file path to the genome config file", type=str
-    )
-    parser.add_argument(
-        "-o", "--output-bed", help="path to the output BED files", type=str
-    )
-    parser.add_argument(
-        "--output-bigbed", help="path to the output bigBed files", type=str
-    )
-    parser.add_argument(
-        "-s",
-        "--sample-name",
-        help="name of the sample used to systematically build the output name",
-        type=str,
-    )
-    parser.add_argument(
-        "--chrom-sizes",
-        help="a full path to the chrom.sizes required for the bedtobigbed conversion",
-        type=str,
-        required=False,
-    )
-    parser.add_argument(
-        "--standard-chrom",
-        help="Standardize chromosome names. Default: False",
-        action="store_true",
-    )
-    # add pypiper args to make pipeline looper compatible
-    parser = pypiper.add_pypiper_args(
-        parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
-    )
+    def __init__(self):
+        parser = ArgumentParser(
+        description="A pipeline to convert bigwig or bedgraph files into bed format",
+        usage='''bedmaker <command> [<args>]
+        
+The commands used in bedmaker are:
+    make        Making bed and bigBed file from other formats
+    qc          Run quality control on bed file
+''')
+        parser.add_argument('command', help='Subcommand to run')
+        args = parser.parse_args(sys.argv[1:2])
+        if not hasattr(self, args.command):
+            print('Unrecognized command, running bedmaker')
+            self.make()
+        getattr(self, args.command)()
 
-    return parser.parse_args(cmdl)
+    @staticmethod
+    def make():
+        parser = ArgumentParser(
+            description='A pipeline to convert bigwig or bedgraph files into bed format')
+
+        parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
+        parser.add_argument(
+            "-n",
+            "--narrowpeak",
+            help="whether the regions are narrow (transcription factor implies narrow, histone mark implies broad peaks)",
+            type=bool,
+        )
+        parser.add_argument(
+            "-t",
+            "--input-type",
+            help="a bigwig or a bedgraph file that will be converted into BED format",
+            type=str,
+        )
+        parser.add_argument("-g", "--genome", help="reference genome", type=str)
+        parser.add_argument(
+            "-r", "--rfg-config", help="file path to the genome config file", type=str
+        )
+        parser.add_argument(
+            "-o", "--output-bed", help="path to the output BED files", type=str
+        )
+        parser.add_argument(
+            "--output-bigbed", help="path to the output bigBed files", type=str
+        )
+        parser.add_argument(
+            "-s",
+            "--sample-name",
+            help="name of the sample used to systematically build the output name",
+            type=str,
+        )
+        parser.add_argument(
+            "--chrom-sizes",
+            help="a full path to the chrom.sizes required for the bedtobigbed conversion",
+            type=str,
+            required=False,
+        )
+        parser.add_argument(
+            "--standard-chrom",
+            help="Standardize chromosome names. Default: False",
+            action="store_true",
+        )
+        # add pypiper args to make pipeline looper compatible
+        parser = pypiper.add_pypiper_args(
+            parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
+        )
+
+        args = parser.parse_args(sys.argv[2:])
+        args_dict = vars(args)
+        args_dict["args"] = args
+        BedMaker(**args_dict).make()
+
+    @staticmethod
+    def qc():
+        """
+        parser for bedqc
+        :return: NoReturn
+        """
+        parser = ArgumentParser(description="A pipeline for bed file QC.")
+
+        parser.add_argument(
+            "--bedfile", help="a full path to bed file to process", required=True
+        )
+        parser.add_argument(
+            "--outfolder", help="a full path to output folder", required=True
+        )
+
+        parser = pypiper.add_pypiper_args(
+            parser, groups=["pypiper", "common", "looper", "ngs"]
+        )
+        args = parser.parse_args(sys.argv[2:])
+        bedfile = args.bedfile
+        outfolder = args.outfolder
+        run_bedqc(bedfile, outfolder)
 
 
 def main():
-    args = _parse_cmdl(sys.argv[1:])
-    args_dict = vars(args)
-    args_dict["args"] = args
-    BedMaker(**args_dict).make()
+    # args = _parse_cmdl(sys.argv[1:])
+    # args_dict = vars(args)
+    # args_dict["args"] = args
+    # BedMaker(**args_dict).make()
+    ParseOpt()
 
 
 if __name__ == "__main__":

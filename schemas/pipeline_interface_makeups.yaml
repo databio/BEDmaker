@@ -4,7 +4,7 @@ var_templates:
   path: "{looper.piface_dir}/bedmaker.py"
 input_schema: http://schema.databio.org/pipelines/bedmaker.yaml
 command_template: >
-  {pipeline.var_templates.path}
+  bedmaker make
   --input-file {sample.input_file_path}
   --output-file {sample.output_file_path}
   --output-bigbed {sample.output_bigbed_path}

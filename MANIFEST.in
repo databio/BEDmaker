@@ -1,0 +1,3 @@
+include requirements/*
+include README.md
+include bedmaker/est_line.sh
