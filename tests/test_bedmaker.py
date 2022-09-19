@@ -12,14 +12,11 @@ class TestSmoke:
         assert True
 
 
-cor_dir = "data/bed/correct"
-bed_files_correct = [
-    os.path.join(cor_dir, d) for d in os.listdir(cor_dir)
-]
-incor_dir = "data/bed/incorrect"
-bed_files_incorrect = [
-    os.path.join(incor_dir, d) for d in os.listdir(incor_dir)
-]
+cor_dir = "tests/data/bed/correct"
+bed_files_correct = [os.path.join(cor_dir, d) for d in os.listdir(cor_dir)]
+incor_dir = "tests/data/bed/incorrect"
+bed_files_incorrect = [os.path.join(incor_dir, d) for d in os.listdir(incor_dir)]
+
 
 class TestBedqc:
     """
