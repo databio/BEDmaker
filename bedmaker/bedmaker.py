@@ -454,29 +454,32 @@ class BedMaker:
 
 
 class ParseOpt(object):
-
     def __init__(self):
         parser = ArgumentParser(
-        description="A pipeline to convert bigwig or bedgraph files into bed format",
-        usage='''bedmaker <command> [<args>]
+            description="A pipeline to convert bigwig or bedgraph files into bed format",
+            usage="""bedmaker <command> [<args>]
         
 The commands used in bedmaker are:
     make        Making bed and bigBed file from other formats
     qc          Run quality control on bed file
-''')
-        parser.add_argument('command', help='Subcommand to run')
+""",
+        )
+        parser.add_argument("command", help="Subcommand to run")
         args = parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
-            print('Unrecognized command, running bedmaker')
+            print("Unrecognized command, running bedmaker")
             self.make()
         getattr(self, args.command)()
 
     @staticmethod
     def make():
         parser = ArgumentParser(
-            description='A pipeline to convert bigwig or bedgraph files into bed format')
+            description="A pipeline to convert bigwig or bedgraph files into bed format"
+        )
 
-        parser.add_argument("-f", "--input-file", help="path to the input file", type=str)
+        parser.add_argument(
+            "-f", "--input-file", help="path to the input file", type=str
+        )
         parser.add_argument(
             "-n",
             "--narrowpeak",
@@ -518,7 +521,9 @@ The commands used in bedmaker are:
         )
         # add pypiper args to make pipeline looper compatible
         parser = pypiper.add_pypiper_args(
-            parser, groups=["pypiper", "looper"], required=["--input-file", "--input-type"]
+            parser,
+            groups=["pypiper", "looper"],
+            required=["--input-file", "--input-type"],
         )
 
         args = parser.parse_args(sys.argv[2:])
