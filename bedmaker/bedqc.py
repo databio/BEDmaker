@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 from argparse import ArgumentParser
 import os
 import sys
@@ -68,7 +69,7 @@ def run_bedqc(
 
     cmd = f"bash {script_path} {file} "
 
-    if pm.run(cmd, lock_name=next(tempfile._get_candidate_names())) > max_region_size:
+    if pm.run(cmd) > max_region_size:
         detail.append("File contains more than 5 million regions.")
 
     # check file size
@@ -112,7 +113,7 @@ class QualityException(Exception):
         """
         Optionally provide explanation for exceptional condition.
 
-        :param str reason: reason why quality control wasn't successful
+        :param str reason: Quality Control didn't pass. Reasons why quality control wasn't successful
         """
         super(QualityException, self).__init__(reason)
 
