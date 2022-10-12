@@ -253,7 +253,7 @@ class BedMaker:
         self.pm.run(cmd, target=self.output_bed)
 
         if self.check_qc:
-            qc = run_bedqc(self.output_bed, outfolder=self.bed_parent)
+            qc = run_bedqc(self.output_bed, outfolder=os.path.join(self.bed_parent, "bedqc_logs"))
             if len(qc) > 0:
                 raise QualityException(str(qc))
 
