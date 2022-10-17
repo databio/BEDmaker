@@ -274,7 +274,7 @@ class BedMaker:
             bedtype = self.get_bed_type(self.output_bed)
             self.pm.clean_add(temp)
 
-            if not is_command_callable("bigBedToBed"):
+            if not is_command_callable("bedToBigBed"):
                 raise SystemExit(
                     "To convert bed to BigBed file You must first install the bedToBigBed tool, "
                     "with bigBedToBed in your PATH. Instruction: "
