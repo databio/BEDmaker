@@ -1,3 +1,5 @@
+Archived: This pipeline is now maintained as part of https://github.com/databio/bedboss
+
 # bedmaker
 
 Pypiper pipeline to convert supported file types* into BED format and bigBed format
